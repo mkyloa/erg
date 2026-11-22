@@ -86,6 +86,15 @@ fun SettingsCustomizationScreen() {
 		}
 
 		item {
+			ListButton(
+				headingContent = { Text(stringResource(R.string.erg_theme_songs)) },
+				captionContent = { Text(stringResource(R.string.erg_theme_songs_caption)) },
+				onClick = { router.push(Routes.CUSTOMIZATION_THEME_SONGS) },
+				modifier = Modifier.focusKey(Routes.CUSTOMIZATION_THEME_SONGS)
+			)
+		}
+
+		item {
 			var seriesThumbnailsEnabled by rememberPreference(userPreferences, UserPreferences.seriesThumbnailsEnabled)
 
 			ListButton(

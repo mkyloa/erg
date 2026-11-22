@@ -1,5 +1,6 @@
 package org.jellyfin.androidtv.ui.home
 
+import androidx.compose.animation.togetherWith
 import android.app.ActivityManager
 import android.content.Context
 import android.content.Intent
@@ -337,16 +338,24 @@ class HomeFragment : Fragment() {
             modernBinding.carouselContainer?.setContent {
             val carouselUiState by carouselViewModel.uiState.collectAsState()
 
-            when (val state = carouselUiState) {
+            // Fade from the skeleton into the carousel
+            androidx.compose.animation.AnimatedContent(
+                targetState = carouselUiState,
+                // Only animate when the kind of state changes, not on every update
+                contentKey = { it::class },
+                transitionSpec = {
+                	androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(350)) togetherWith
+                		androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(350))
+                },
+                label = "carousel-state",
+            ) { state ->
+            when (state) {
                 is CarouselUiState.Loading -> {
-                    Box(
+                    // Carousel-shaped placeholder instead of a spinner
+                    org.jellyfin.androidtv.ui.composable.SkeletonHero(
                         modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        androidx.compose.material3.CircularProgressIndicator(
-                            modifier = Modifier.size(48.dp)
-                        )
-                    }
+                        shape = RoundedCornerShape(12.dp),
+                    )
                 }
                 is CarouselUiState.Success -> {
                     val activeIndex by carouselViewModel.activeIndex.collectAsState()
@@ -433,6 +442,7 @@ class HomeFragment : Fragment() {
                         }
                     }
                 }
+            }
             }
             }
         }

@@ -45,5 +45,15 @@ fun SettingsCustomizationBackdropScreen() {
 					.focusKey("backdrop_behavior_${entry.name}", initialFocus = backdropBehavior == entry)
 			)
 		}
+
+		item {
+			var dynamicColors by rememberPreference(userPreferences, UserPreferences.backdropDynamicColors)
+			ListButton(
+				headingContent = { Text(stringResource(R.string.erg_backdrop_dynamic_colors)) },
+				captionContent = { Text(stringResource(R.string.erg_backdrop_dynamic_colors_caption)) },
+				trailingContent = { org.jellyfin.androidtv.ui.base.form.Checkbox(checked = dynamicColors) },
+				onClick = { dynamicColors = !dynamicColors },
+			)
+		}
 	}
 }

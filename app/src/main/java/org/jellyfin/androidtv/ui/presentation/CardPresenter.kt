@@ -307,6 +307,13 @@ private fun CardViewHolderContent(
 
 	val usePreview = displayConfig.overrideShowInfo ?: showInfo
 
+	// Erg focus ring: fades in/out instead of snapping
+	val ringAlpha by androidx.compose.animation.core.animateFloatAsState(
+		targetValue = if (focused) 1f else 0f,
+		animationSpec = androidx.compose.animation.core.tween(120),
+		label = "card-focus-ring",
+	)
+
 	val card = @Composable {
 		ItemCard(
 			image = {
@@ -376,8 +383,8 @@ private fun CardViewHolderContent(
 			},
 			modifier = Modifier
 				.size(size)
-				// DUNE: flat cards, white focus ring instead of zoom/dim
-				.then(if (focused) Modifier.border(2.dp, Tokens.Color.colorWhite, JellyfinTheme.shapes.medium) else Modifier)
+				// Erg: flat cards, white focus ring instead of zoom/dim
+				.then(if (ringAlpha > 0f) Modifier.border(2.dp, Tokens.Color.colorWhite.copy(alpha = ringAlpha), JellyfinTheme.shapes.medium) else Modifier)
 		)
 	}
 

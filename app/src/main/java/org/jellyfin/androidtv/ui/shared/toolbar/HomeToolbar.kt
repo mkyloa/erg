@@ -1,5 +1,8 @@
 package org.jellyfin.androidtv.ui.shared.toolbar
 
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.animateColorAsState
 import android.R.attr.scaleX
 import android.R.attr.scaleY
 import android.os.Build
@@ -173,6 +176,7 @@ fun HomeToolbar(
 
             Box(
                 modifier = Modifier
+                    .animateContentSize(tween(150))
                     .let { modifier ->
                         if (isSearchFocused) {
                             modifier
@@ -186,7 +190,11 @@ fun HomeToolbar(
                         }
                     }
                     .background(
-                        if (isSearchFocused) Color.White.copy(alpha = 0.85f) else Color.Transparent
+                        animateColorAsState(
+                        	if (isSearchFocused) Color.White.copy(alpha = 0.85f) else Color.Transparent,
+                        	tween(150),
+                        	label = "isSearchFocused",
+                        ).value
                     ),
                 contentAlignment = Alignment.Center
             ) {
@@ -244,6 +252,7 @@ fun HomeToolbar(
 
             Box(
                 modifier = Modifier
+                    .animateContentSize(tween(150))
                     .let { modifier ->
                         if (isLibraryFocused) {
                             modifier
@@ -257,7 +266,11 @@ fun HomeToolbar(
                         }
                     }
                     .background(
-                        if (isLibraryFocused) Color.White.copy(alpha = 0.85f) else Color.Transparent
+                        animateColorAsState(
+                        	if (isLibraryFocused) Color.White.copy(alpha = 0.85f) else Color.Transparent,
+                        	tween(150),
+                        	label = "isLibraryFocused",
+                        ).value
                     ),
                 contentAlignment = Alignment.Center
             ) {
@@ -316,6 +329,7 @@ fun HomeToolbar(
 
                 Box(
                     modifier = Modifier
+                        .animateContentSize(tween(150))
                         .let { modifier ->
                             if (isLiveTvFocused) {
                                 modifier
@@ -329,7 +343,11 @@ fun HomeToolbar(
                             }
                         }
                         .background(
-                            if (isLiveTvFocused) Color.White.copy(alpha = 0.85f) else Color.Transparent
+                            animateColorAsState(
+                            	if (isLiveTvFocused) Color.White.copy(alpha = 0.85f) else Color.Transparent,
+                            	tween(150),
+                            	label = "isLiveTvFocused",
+                            ).value
                         ),
                     contentAlignment = Alignment.Center
                 ) {
@@ -438,6 +456,7 @@ fun HomeToolbar(
 
                 Box(
                     modifier = Modifier
+                        .animateContentSize(tween(150))
                         .let { modifier ->
                             if (isMasksFocused) {
                                 modifier
@@ -451,7 +470,11 @@ fun HomeToolbar(
                             }
                         }
                         .background(
-                            if (isMasksFocused) Color.White.copy(alpha = 0.85f) else Color.Transparent
+                            animateColorAsState(
+                            	if (isMasksFocused) Color.White.copy(alpha = 0.85f) else Color.Transparent,
+                            	tween(150),
+                            	label = "isMasksFocused",
+                            ).value
                         ),
                     contentAlignment = Alignment.Center
                 ) {
@@ -509,6 +532,7 @@ fun HomeToolbar(
 
             Box(
                 modifier = Modifier
+                    .animateContentSize(tween(150))
                     .let { modifier ->
                         if (isSettingsFocused) {
                             modifier
@@ -522,7 +546,11 @@ fun HomeToolbar(
                         }
                     }
                     .background(
-                        if (isSettingsFocused) Color.White.copy(alpha = 0.85f) else Color.Transparent
+                        animateColorAsState(
+                        	if (isSettingsFocused) Color.White.copy(alpha = 0.85f) else Color.Transparent,
+                        	tween(150),
+                        	label = "isSettingsFocused",
+                        ).value
                     ),
                 contentAlignment = Alignment.Center
             ) {
@@ -579,6 +607,7 @@ fun HomeToolbar(
 
             Box(
                 modifier = Modifier
+                    .animateContentSize(tween(150))
                     .let { modifier ->
                         if (isFavoritesFocused) {
                             modifier
@@ -592,7 +621,11 @@ fun HomeToolbar(
                         }
                     }
                     .background(
-                        if (isFavoritesFocused) Color.White.copy(alpha = 0.85f) else Color.Transparent
+                        animateColorAsState(
+                        	if (isFavoritesFocused) Color.White.copy(alpha = 0.85f) else Color.Transparent,
+                        	tween(150),
+                        	label = "isFavoritesFocused",
+                        ).value
                     ),
                 contentAlignment = Alignment.Center
             ) {
@@ -648,6 +681,7 @@ fun HomeToolbar(
 
             Box(
                 modifier = Modifier
+                    .animateContentSize(tween(150))
                     .let { modifier ->
                         if (isDiscoverFocused) {
                             modifier
@@ -661,7 +695,11 @@ fun HomeToolbar(
                         }
                     }
                     .background(
-                        if (isDiscoverFocused) Color.White.copy(alpha = 0.85f) else Color.Transparent
+                        animateColorAsState(
+                        	if (isDiscoverFocused) Color.White.copy(alpha = 0.85f) else Color.Transparent,
+                        	tween(150),
+                        	label = "isDiscoverFocused",
+                        ).value
                     ),
                 contentAlignment = Alignment.Center
             ) {

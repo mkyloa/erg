@@ -31,7 +31,7 @@ class UserSettingPreferences(
 		val homesection9 = enumPreference("homesection9", HomeSectionType.NONE)
 	}
 
-	// DUNE additions (instance members so existing DUNE call sites keep working)
+	// Erg additions (instance members, as the code ported from DUNE expects)
 	val genrerow0 = enumPreference("genrerow0", GenreRowType.SUGGESTED_MOVIES)
 	val genrerow1 = enumPreference("genrerow1", GenreRowType.COLLECTIONS)
 	val genrerow2 = enumPreference("genrerow2", GenreRowType.DISCOVER_MOVIES)
@@ -42,13 +42,14 @@ class UserSettingPreferences(
 	val genrerow7 = enumPreference("genrerow7", GenreRowType.NONE)
 	val genrerow8 = enumPreference("genrerow8", GenreRowType.NONE)
 	val genrerow9 = enumPreference("genrerow9", GenreRowType.NONE)
+	val genrerows = listOf(genrerow0, genrerow1, genrerow2, genrerow3, genrerow4, genrerow5, genrerow6, genrerow7, genrerow8, genrerow9)
 
 	val themeSongsEnabled = booleanPreference("themesongsEnabled", false)
 	val themesongvolume = intPreference("themesongsVolume", 10)
 	val themeSongsMovies = booleanPreference("themeSongsMovies", true)
 	val themeSongsSeries = booleanPreference("themeSongsSeries", true)
 	val themeSongsEpisodes = booleanPreference("themeSongsEpisodes", false)
-	val themeSongsArchiveFallback = booleanPreference("themeSongsArchiveFallback", true)
+	val themeSongsArchiveFallback = booleanPreference("themeSongsArchiveFallback", false)
 
 	val useExtraSmallMediaFolders = booleanPreference("useExtraSmallMediaFolders", true)
 	val showLiveTvButton = booleanPreference("show_live_tv_button", false)

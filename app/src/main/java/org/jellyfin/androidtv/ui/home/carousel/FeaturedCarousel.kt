@@ -1,5 +1,6 @@
 package org.jellyfin.androidtv.ui.home.carousel
 
+import androidx.compose.animation.togetherWith
 import android.os.Build
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -188,7 +189,11 @@ fun FeaturedCarousel(
 	}
 
 	var isCarouselFocused by remember { mutableStateOf(false) }
-	val borderAlpha = if (isCarouselFocused) 1f else 0.1f
+	val borderAlpha by androidx.compose.animation.core.animateFloatAsState(
+		targetValue = if (isCarouselFocused) 1f else 0.1f,
+		animationSpec = androidx.compose.animation.core.tween(200),
+		label = "carousel-border",
+	)
 	var actualCarouselIndex by remember { mutableIntStateOf(activeIndex) }
 	val carouselState = remember { CarouselState() }
 
@@ -327,15 +332,28 @@ private fun Android12CompatibleCarousel(
 			}
 	) {
 		if (items.isNotEmpty()) {
-			val currentItem = items[currentIndex]
 
-			CarouselItemBackground(item = currentItem, modifier = Modifier.fillMaxSize())
-			CarouselItemForeground(
-				item = currentItem,
-				isCarouselFocused = carouselHasFocus,
-				onItemSelected = { onItemSelected(currentItem) },
-				modifier = Modifier.fillMaxSize()
-			)
+			// Crossfade between slides instead of swapping instantly
+			androidx.compose.animation.AnimatedContent(
+				targetState = currentIndex.coerceIn(items.indices),
+				transitionSpec = {
+					androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(450)) togetherWith
+						androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(450))
+				},
+				label = "carousel-slide",
+				modifier = Modifier.fillMaxSize(),
+			) { index ->
+				val item = items[index]
+				Box(Modifier.fillMaxSize()) {
+					CarouselItemBackground(item = item, modifier = Modifier.fillMaxSize())
+					CarouselItemForeground(
+						item = item,
+						isCarouselFocused = carouselHasFocus,
+						onItemSelected = { onItemSelected(item) },
+						modifier = Modifier.fillMaxSize()
+					)
+				}
+			}
 
 			val userPreferences = koinInject<UserPreferences>()
 			if (userPreferences[UserPreferences.snowfallEnabled]) {

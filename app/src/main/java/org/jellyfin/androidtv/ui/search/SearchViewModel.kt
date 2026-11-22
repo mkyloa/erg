@@ -45,6 +45,10 @@ class SearchViewModel(
 	private val _searchResultsFlow = MutableStateFlow<Collection<SearchResultGroup>>(emptyList())
 	val searchResultsFlow = _searchResultsFlow.asStateFlow()
 
+	private val _isSearching = MutableStateFlow(false)
+	/** True from the moment a query is accepted (including the debounce) until its results arrive. */
+	val isSearching = _isSearching.asStateFlow()
+
 	fun searchImmediately(query: String) = searchDebounced(query, 0.milliseconds)
 
 	fun searchDebounced(query: String, debounce: Duration = debounceDuration): Boolean {
@@ -55,10 +59,12 @@ class SearchViewModel(
 		searchJob?.cancel()
 
 		if (trimmed.isBlank()) {
+			_isSearching.value = false
 			_searchResultsFlow.value = emptyList()
 			return true
 		}
 
+		_isSearching.value = true
 		searchJob = viewModelScope.launch {
 			delay(debounce)
 
@@ -70,6 +76,7 @@ class SearchViewModel(
 					SearchResultGroup(stringRes, items)
 				}
 			}.awaitAll().filter { it.items.isNotEmpty() }
+			_isSearching.value = false
 		}
 
 		return true

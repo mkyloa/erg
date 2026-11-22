@@ -92,6 +92,7 @@ class HomeRowsFragment : RowsSupportFragment(), AudioEventListener, View.OnKeyLi
 	// Special rows
 	private val notificationsRow by lazy { NotificationsHomeFragmentRow(lifecycleScope, notificationsRepository) }
 	private val nowPlaying by lazy { HomeFragmentNowPlayingRow(lifecycleScope, playbackManager, mediaManager) }
+	private val curatedRows by lazy { HomeCuratedRows(requireContext(), userRepository, userSettingPreferences, api) }
 	private val liveTVRow by lazy { HomeFragmentLiveTVRow(requireActivity(), userRepository) }
 
 	override fun onCreate(savedInstanceState: Bundle?) {
@@ -160,6 +161,9 @@ class HomeRowsFragment : RowsSupportFragment(), AudioEventListener, View.OnKeyLi
 			val sectionLoadTime = System.currentTimeMillis() - startTime
 			Timber.d("Loaded ${rows.size} home sections in parallel in ${sectionLoadTime}ms")
 
+			// Erg curated rows ("genre rows"), shown below the regular sections
+			val curated = curatedRows.build()
+
 			// Add sections to layout
 			withContext(Dispatchers.Main) {
 				val cardPresenter = CardPresenter(false, 170)
@@ -182,7 +186,10 @@ class HomeRowsFragment : RowsSupportFragment(), AudioEventListener, View.OnKeyLi
 						Timber.e(e, "Error adding row to adapter")
 					}
 				}
-				// TODO(dune-next): genre rows (GenreManager) deferred to a later milestone
+				curated.forEach { row ->
+					runCatching { row.addToRowsAdapter(requireContext(), cardPresenter, rowsAdapter) }
+						.onFailure { Timber.e(it, "Error adding curated row") }
+				}
 
 				// Wire up Live TV sibling rows so the On Now row removes the buttons row when empty
 				for (i in 0 until rowsAdapter.size()) {

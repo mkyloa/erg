@@ -116,6 +116,9 @@ object Routes {
 	const val PLAYBACK_AVC_LEVEL = "/playback/codec/avc-level"
 	const val PLAYBACK_HEVC_LEVEL = "/playback/codec/hevc-level"
 	const val SEERR = "/seerr"
+	const val HOME_CURATED_ROW = "/home/curated/{index}"
+	const val HOME_CAROUSEL_SORT = "/home/carousel-sort"
+	const val CUSTOMIZATION_THEME_SONGS = "/customization/theme-songs"
 	const val TELEMETRY = "/telemetry"
 	const val DEVELOPER = "/developer"
 	const val ABOUT = "/about"
@@ -317,4 +320,4 @@ val routes = mapOf<String, RouteComposable>(
 			artifactId = context.parameters["artifactId"]!!
 		)
 	},
-)
+) + org.jellyfin.androidtv.ui.settings.screen.erg.ergSettingsRoutes

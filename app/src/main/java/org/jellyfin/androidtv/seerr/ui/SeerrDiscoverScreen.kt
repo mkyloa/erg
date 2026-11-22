@@ -1,5 +1,6 @@
 package org.jellyfin.androidtv.seerr.ui
 
+import androidx.compose.animation.togetherWith
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -67,15 +68,27 @@ fun SeerrDiscoverScreen(
 	val state by viewModel.state.collectAsState()
 	val searchResults by viewModel.searchResults.collectAsState()
 	val detail by viewModel.detail.collectAsState()
+	val searching by viewModel.searching.collectAsState()
 
 	Box(
 		Modifier
 			.fillMaxSize()
 			.background(Color(0xFF101623))
 	) {
-		when (val current = state) {
+		// Fade between loading skeleton, content and error states
+		androidx.compose.animation.AnimatedContent(
+			targetState = state,
+			// Only animate when the kind of state changes, not on every update
+			contentKey = { it::class },
+			transitionSpec = {
+				androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(300)) togetherWith
+					androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(300))
+			},
+			label = "seerr-discover-state",
+		) { current ->
+		when (current) {
 			SeerrDiscoverState.NeedsSetup -> SetupNeeded(onOpenSettings)
-			SeerrDiscoverState.Loading -> Centered { CircularProgressIndicator() }
+			SeerrDiscoverState.Loading -> DiscoverSkeleton()
 			is SeerrDiscoverState.Error -> Centered {
 				Column(horizontalAlignment = Alignment.CenterHorizontally) {
 					Text(stringResource(R.string.seerr_load_failed, current.message), color = Color.White)
@@ -88,18 +101,30 @@ fun SeerrDiscoverScreen(
 			is SeerrDiscoverState.Content -> DiscoverContent(
 				rows = current.rows,
 				searchResults = searchResults,
+				searching = searching,
 				onSearch = viewModel::search,
 				onSelect = viewModel::openDetail,
 			)
 		}
+		}
 
-		detail?.let { detailState ->
-			BackHandler { viewModel.closeDetail() }
-			SeerrDetailScreen(
-				state = detailState,
-				viewModel = viewModel,
-				onOpenLibraryItem = onOpenLibraryItem,
-			)
+		if (detail != null) BackHandler { viewModel.closeDetail() }
+
+		// Keep the last detail state around while it fades out
+		var lastDetail by remember { mutableStateOf(detail) }
+		if (detail != null) lastDetail = detail
+		androidx.compose.animation.AnimatedVisibility(
+			visible = detail != null,
+			enter = androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(250)),
+			exit = androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(200)),
+		) {
+			lastDetail?.let { detailState ->
+				SeerrDetailScreen(
+					state = detailState,
+					viewModel = viewModel,
+					onOpenLibraryItem = onOpenLibraryItem,
+				)
+			}
 		}
 	}
 }
@@ -108,6 +133,7 @@ fun SeerrDiscoverScreen(
 private fun DiscoverContent(
 	rows: List<SeerrRow>,
 	searchResults: List<SeerrResult>?,
+	searching: Boolean,
 	onSearch: (String) -> Unit,
 	onSelect: (SeerrResult) -> Unit,
 ) {
@@ -139,6 +165,12 @@ private fun DiscoverContent(
 					onSubmit = { onSearch(query) },
 					modifier = Modifier.width(420.dp),
 				)
+			}
+		}
+
+		if (searching && searchResults == null) {
+			item(key = "search-loading") {
+				org.jellyfin.androidtv.ui.composable.SkeletonPosterRow(cardWidth = PosterWidth, cardHeight = PosterHeight)
 			}
 		}
 
@@ -201,6 +233,11 @@ private fun PosterCard(
 ) {
 	val interaction = remember { MutableInteractionSource() }
 	val focused by interaction.collectIsFocusedAsState()
+	val ringAlpha by androidx.compose.animation.core.animateFloatAsState(
+		targetValue = if (focused) 1f else 0f,
+		animationSpec = androidx.compose.animation.core.tween(120),
+		label = "poster-focus-ring",
+	)
 
 	Column(modifier.width(PosterWidth)) {
 		Box(
@@ -208,16 +245,16 @@ private fun PosterCard(
 				.size(PosterWidth, PosterHeight)
 				.clip(CardShape)
 				.background(Color.White.copy(alpha = 0.08f), CardShape)
-				.then(if (focused) Modifier.border(2.dp, Color.White, CardShape) else Modifier)
+				.then(if (ringAlpha > 0f) Modifier.border(2.dp, Color.White.copy(alpha = ringAlpha), CardShape) else Modifier)
 				.clickable(interactionSource = interaction, indication = null, onClick = onClick)
 				.focusable(interactionSource = interaction)
 		) {
 			val poster = seerrImageUrl(item.posterPath, "w342")
 			if (poster != null) {
-				AsyncImage(
-					model = poster,
+				SeerrImage(
+					url = poster,
 					contentDescription = item.displayTitle,
-					contentScale = ContentScale.Crop,
+					shape = CardShape,
 					modifier = Modifier.fillMaxSize(),
 				)
 			} else {
@@ -261,6 +298,27 @@ fun StatusBadge(status: SeerrMediaStatus, modifier: Modifier = Modifier) {
 }
 
 @Composable
+private fun DiscoverSkeleton() = org.jellyfin.androidtv.ui.composable.SkeletonGroup {
+	Column(
+		modifier = Modifier
+			.fillMaxSize()
+			.padding(start = 48.dp, end = 48.dp, top = 27.dp),
+		verticalArrangement = Arrangement.spacedBy(28.dp),
+	) {
+		Row(verticalAlignment = Alignment.CenterVertically) {
+			org.jellyfin.androidtv.ui.composable.SkeletonLine(width = 160.dp, height = 28.dp)
+			org.jellyfin.androidtv.ui.composable.SkeletonBox(
+				Modifier.padding(start = 24.dp).size(420.dp, 48.dp),
+				RoundedCornerShape(percent = 30),
+			)
+		}
+		repeat(3) {
+			org.jellyfin.androidtv.ui.composable.SkeletonPosterRow(cardWidth = PosterWidth, cardHeight = PosterHeight)
+		}
+	}
+}
+
+@Composable
 private fun SetupNeeded(onOpenSettings: () -> Unit) {
 	val focus = remember { FocusRequester() }
 	LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
@@ -300,7 +358,7 @@ internal val BottomScrim = Brush.verticalGradient(
 internal fun FullBleedBackdrop(path: String?) {
 	val url = seerrImageUrl(path, "w1280") ?: return
 	Box(Modifier.fillMaxSize()) {
-		AsyncImage(model = url, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+		SeerrImage(url = url, contentDescription = null, crossfadeMillis = 400, modifier = Modifier.fillMaxSize())
 		Box(Modifier.fillMaxSize().background(BackdropScrim))
 		Box(Modifier.fillMaxSize().background(BottomScrim))
 	}

@@ -56,6 +56,10 @@ class SeerrDiscoverViewModel(
 	/** null when no search is active. */
 	val searchResults: StateFlow<List<SeerrResult>?> = _searchResults.asStateFlow()
 
+	private val _searching = MutableStateFlow(false)
+	/** True while a search is debouncing or in flight. */
+	val searching: StateFlow<Boolean> = _searching.asStateFlow()
+
 	private val _detail = MutableStateFlow<SeerrDetailState?>(null)
 	val detail: StateFlow<SeerrDetailState?> = _detail.asStateFlow()
 
@@ -108,9 +112,13 @@ class SeerrDiscoverViewModel(
 	fun search(query: String) {
 		searchJob?.cancel()
 		if (query.isBlank()) {
+			_searching.value = false
 			_searchResults.value = null
 			return
 		}
+		_searching.value = true
+		// Drop stale results so the placeholder row shows for the new query
+		_searchResults.value = null
 		searchJob = viewModelScope.launch {
 			delay(400) // debounce typing
 			_searchResults.value = runCatching { seerr.search(query.trim()) }
@@ -119,6 +127,7 @@ class SeerrDiscoverViewModel(
 				?.results
 				?.filter { it.mediaType != MEDIA_PERSON }
 				.orEmpty()
+			_searching.value = false
 		}
 	}
 

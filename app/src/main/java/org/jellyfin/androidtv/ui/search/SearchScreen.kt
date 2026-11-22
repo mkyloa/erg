@@ -85,6 +85,7 @@ fun SearchScreen(
 ) {
 	val context = LocalContext.current
 	val searchResults by viewModel.searchResultsFlow.collectAsStateWithLifecycle()
+	val isSearching by viewModel.isSearching.collectAsStateWithLifecycle()
 
 	var query by remember { mutableStateOf(initialQuery ?: "") }
 	var isSearchFocused by remember { mutableStateOf(false) }
@@ -242,7 +243,22 @@ fun SearchScreen(
 			)
 		}
 
-		if (searchResults.isEmpty() && query.isNotBlank()) {
+		// While the first results for a query are on their way, show placeholders rather than "no results"
+		if (searchResults.isEmpty() && query.isNotBlank() && isSearching) {
+			org.jellyfin.androidtv.ui.composable.SkeletonGroup {
+				Column(
+					modifier = Modifier
+						.fillMaxWidth()
+						.weight(1f)
+						.padding(horizontal = 48.dp, vertical = 16.dp),
+					verticalArrangement = Arrangement.spacedBy(28.dp),
+				) {
+					repeat(2) { org.jellyfin.androidtv.ui.composable.SkeletonPosterRow(cardWidth = 120.dp, cardHeight = 180.dp) }
+				}
+			}
+		}
+
+		if (searchResults.isEmpty() && query.isNotBlank() && !isSearching) {
 			Box(
 				modifier = Modifier
 					.fillMaxWidth()
@@ -486,7 +502,13 @@ private fun SearchItemCard(
 			modifier = Modifier
 				.height(cardHeight.dp)
 				.onFocusChanged { isCardFocused = it.isFocused }
-				.scale(if (isCardFocused) 1.10f else 1.0f)
+				.scale(
+					androidx.compose.animation.core.animateFloatAsState(
+						targetValue = if (isCardFocused) 1.10f else 1.0f,
+						animationSpec = androidx.compose.animation.core.tween(150),
+						label = "search-card-scale",
+					).value
+				)
 				.border(
 					width = 2.dp,
 					color = if (isCardFocused) {

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Erg mark (two crescent dunes), cropped to the mark for use as a tintable icon -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="66"
+    android:viewportHeight="66">
+    <group
+        android:translateX="-21"
+        android:translateY="-21">
+        <path
+            android:fillAlpha="0.5"
+            android:fillColor="#FFFFFFFF"
+            android:pathData="M22,61 C34,47 50,37 62,41 C72,45 78,54 86,58 C66,53 42,55 22,61 Z" />
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:pathData="M21,72 C32,61 46,53 58,55 C70,57 80,65 87,71 C66,66 40,66 21,72 Z" />
+    </group>
+</vector>

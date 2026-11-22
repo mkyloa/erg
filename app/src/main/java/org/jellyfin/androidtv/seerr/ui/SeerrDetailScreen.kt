@@ -1,5 +1,6 @@
 package org.jellyfin.androidtv.seerr.ui
 
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -51,13 +52,28 @@ fun SeerrDetailScreen(
 			.fillMaxSize()
 			.background(Color(0xFF101623))
 	) {
-		when (state) {
-			SeerrDetailState.Loading -> Centered { CircularProgressIndicator() }
+		androidx.compose.animation.AnimatedContent(
+			targetState = state,
+			contentKey = { it::class },
+			transitionSpec = {
+				androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(300)) togetherWith
+					androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(300))
+			},
+			label = "seerr-detail-state",
+		) { current ->
+		when (current) {
+			SeerrDetailState.Loading -> org.jellyfin.androidtv.ui.composable.SkeletonGroup {
+				org.jellyfin.androidtv.ui.composable.SkeletonHero(
+					modifier = Modifier.fillMaxSize(),
+					shape = androidx.compose.ui.graphics.RectangleShape,
+				)
+			}
 			is SeerrDetailState.Error -> Centered {
-				Text(stringResource(R.string.seerr_load_failed, state.message), color = Color.White)
+				Text(stringResource(R.string.seerr_load_failed, current.message), color = Color.White)
 			}
 
-			is SeerrDetailState.Content -> DetailContent(state, viewModel, onOpenLibraryItem)
+			is SeerrDetailState.Content -> DetailContent(current, viewModel, onOpenLibraryItem)
+		}
 		}
 	}
 }
@@ -75,6 +91,9 @@ private fun DetailContent(
 	val sentMessage = stringResource(R.string.seerr_request_sent)
 	val failedTemplate = stringResource(R.string.seerr_request_failed, "%s")
 	val onFailed: (String) -> String = { failedTemplate.replace("%s", it) }
+
+	// Back closes the season picker first, then the title page
+	androidx.activity.compose.BackHandler(enabled = choosingSeasons) { choosingSeasons = false }
 
 	LaunchedEffect(details.id, choosingSeasons) {
 		if (!choosingSeasons) runCatching { primaryFocus.requestFocus() }
@@ -176,7 +195,13 @@ private fun DetailContent(
 			}
 		}
 
-		if (choosingSeasons && !state.isMovie) {
+		// Season picker slides in from the right
+		androidx.compose.animation.AnimatedVisibility(
+			visible = choosingSeasons && !state.isMovie,
+			enter = androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(200)) +
+				androidx.compose.animation.slideInHorizontally(androidx.compose.animation.core.tween(250)) { it / 4 },
+			exit = androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(150)),
+		) {
 			SeasonPicker(
 				details = details,
 				onRequest = { seasons ->

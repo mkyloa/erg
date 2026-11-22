@@ -2,9 +2,9 @@
 <resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
 
     <!-- App Name -->
-    <string name="app_name">Dune Next</string>
-    <string name="app_name_release" translatable="false" tools:ignore="UnusedResources">DUNE</string>
-    <string name="app_name_debug" translatable="false" tools:ignore="UnusedResources">Dune Next Debug</string>
+    <string name="app_name">Erg</string>
+    <string name="app_name_release" translatable="false" tools:ignore="UnusedResources">Erg</string>
+    <string name="app_name_debug" translatable="false" tools:ignore="UnusedResources">Erg Debug</string>
 
     <!-- General UI Labels -->
     <string name="loading">Loading…</string>
@@ -150,7 +150,7 @@
     <string name="no_results_found">No results found</string>
     <string name="start_typing">Start typing to search</string>
     <string name="use_keyboard_or">Use keyboard or voice search</string>
-    <string name="searchable_hint">Search Dune</string>
+    <string name="searchable_hint">Search Erg</string>
     <string name="searchable_settings_description">Media</string>
 
     <!-- Library & Collections -->
@@ -900,7 +900,7 @@
     <string name="login_quickconnect_step_2">2.Open the user menu and go to the Quick Connect page</string>
     <string name="login_quickconnect_step_3">3.Enter the following code:</string>
     <string name="login_help_title">Need help?</string>
-    <string name="login_help_description">Dune requires a server to connect with. Visit the documentation at docs.jellyfin.org or scan the QR code to get started.</string>
+    <string name="login_help_description">Erg requires a Jellyfin server to connect with. Visit the documentation at docs.jellyfin.org or scan the QR code to get started.</string>
     <!-- User Management -->
     <string name="pref_accounts">Accounts</string>
     <string name="lbl_switch_user">Users</string>
@@ -941,7 +941,7 @@
     <string name="desc_debug">Provide extra information for debugging</string>
     <string name="pref_developer_link">Experimental Features</string>
     <string name="pref_developer_link_description">Advanced and experimental features</string>
-    <string name="no_network_permissions">Dune requires network permissions to function</string>
+    <string name="no_network_permissions">Erg requires network permissions to function</string>
     <string name="disable_ui_mode_warning">Disable device type warning</string>
     <string name="app_notification_uimode_invalid">This app is optimized for televisions. We recommend using the mobile app.</string>
 
@@ -1055,7 +1055,7 @@
     <!-- Licenses -->
     <string name="open_source_licenses">Open Source Licenses</string>
     <!-- Exit Confirmation -->
-    <string name="exit_app_title">Exit DUNE</string>
+    <string name="exit_app_title">Exit Erg</string>
     <string name="exit_app_message">Are you sure you want to exit?</string>
     <string name="yes">Yes</string>
     <string name="no">No</string>
@@ -1189,4 +1189,29 @@
     <string name="seerr_season_n">Season %1$d</string>
     <string name="seerr_episodes_n">%1$d episodes</string>
     <string name="seerr_back">Back</string>
+    <!-- Erg settings -->
+    <string name="erg_layout">Layout</string>
+    <string name="erg_classic_home">Classic home screen</string>
+    <string name="erg_classic_home_caption">Rows only, without the featured carousel</string>
+    <string name="erg_compact_libraries">Compact library buttons</string>
+    <string name="erg_compact_libraries_caption">Show libraries as text tabs instead of tiles</string>
+    <string name="erg_toolbar_live_tv">Live TV button in toolbar</string>
+    <string name="erg_toolbar_random">Random pick button in toolbar</string>
+    <string name="erg_carousel">Featured carousel</string>
+    <string name="erg_carousel_sort">Order</string>
+    <string name="erg_carousel_include_series">Include shows</string>
+    <string name="erg_curated_rows">Extra rows</string>
+    <string name="erg_curated_row_i">Extra row %1$d</string>
+    <string name="erg_theme_songs">Theme songs</string>
+    <string name="erg_theme_songs_caption">Play a show or movie\'s theme on its detail page</string>
+    <string name="erg_theme_songs_enabled">Play theme songs</string>
+    <string name="erg_theme_songs_volume">Volume</string>
+    <string name="erg_theme_songs_movies">For movies</string>
+    <string name="erg_theme_songs_series">For shows</string>
+    <string name="erg_theme_songs_episodes">For episodes</string>
+    <string name="erg_theme_songs_archive">Look up missing themes online</string>
+    <string name="erg_theme_songs_archive_caption">Sends the title to archive.org when your server has no theme song</string>
+    <string name="erg_backdrop_dynamic_colors">Dynamic colors</string>
+    <string name="erg_backdrop_dynamic_colors_caption">Tint the background with colors from the artwork</string>
+    <string name="erg_percent">%1$d%%</string>
 </resources>

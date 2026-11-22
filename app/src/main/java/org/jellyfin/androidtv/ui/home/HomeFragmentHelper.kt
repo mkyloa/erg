@@ -94,7 +94,7 @@ class HomeFragmentHelper(
 	}
 
 
-	// DUNE: landscape, label-free cards for resume / next up rows
+	// Erg: landscape, label-free cards for resume / next up rows
 	private fun landscapePresenter() = CardPresenter(false, ImageType.THUMB, 140, true)
 
 	private fun HomeFragmentRow.withPresenter(presenter: CardPresenter) = object : HomeFragmentRow {
