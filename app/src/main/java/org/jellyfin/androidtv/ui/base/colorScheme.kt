@@ -3,7 +3,10 @@ package org.jellyfin.androidtv.ui.base
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import org.jellyfin.androidtv.preference.UserPreferences
+import org.jellyfin.androidtv.preference.constant.AppTheme
 import org.jellyfin.design.Tokens
+import org.koin.mp.KoinPlatform
 
 fun colorScheme(): ColorScheme = ColorScheme(
 	background = Tokens.Color.colorGrey975,
@@ -79,4 +82,59 @@ data class ColorScheme(
 	val scrim: Color,
 )
 
-val LocalColorScheme = staticCompositionLocalOf { colorScheme() }
+/** Gruvbox dark (github.com/morhetz/gruvbox) for Compose screens. */
+fun gruvboxColorScheme(): ColorScheme = ColorScheme(
+	background = Color(0xFF282828),
+	onBackground = Color(0xFFEBDBB2),
+	button = Color(0xB33C3836),
+	onButton = Color(0xFFD5C4A1),
+	buttonFocused = Color(0xFFEBDBB2),
+	onButtonFocused = Color(0xFF282828),
+	buttonDisabled = Color(0x333C3836),
+	onButtonDisabled = Color(0xFF7C6F64),
+	buttonActive = Color(0x4DFABD2F),
+	onButtonActive = Color(0xFFEBDBB2),
+	input = Color(0xFF504945),
+	onInput = Color(0xFFD5C4A1),
+	inputFocused = Color(0xFFFABD2F),
+	onInputFocused = Color(0xFFEBDBB2),
+	rangeControlBackground = Color(0xFF504945),
+	rangeControlFill = Color(0xFFFABD2F),
+	rangeControlKnob = Color(0xFFEBDBB2),
+	seekbarBuffer = Color(0xFF7C6F64),
+	recording = Color(0xFFFB4934),
+	onRecording = Color(0xFFEBDBB2),
+	badge = Color(0xFFFE8019),
+	onBadge = Color(0xFF282828),
+	listHeader = Color(0xFFEBDBB2),
+	listOverline = Color(0xFF928374),
+	listHeadline = Color(0xFFEBDBB2),
+	listCaption = Color(0xFFA89984),
+	listButton = Color.Transparent,
+	listButtonFocused = Color(0xFF504945),
+	surface = Color(0xFF3C3836),
+	scrim = Color(0xAB1D2021),
+)
+
+/** Compose colors for an app theme. Themes without their own scheme use the default. */
+fun colorSchemeFor(theme: AppTheme): ColorScheme = when (theme) {
+	AppTheme.GRUVBOX -> gruvboxColorScheme()
+	else -> colorScheme()
+}
+
+private val schemeCache = mutableMapOf<AppTheme, ColorScheme>()
+
+/**
+ * The scheme for the theme the user picked. Read on every access rather than cached once, so a
+ * theme change applies to new screens without restarting the app; also covers the many small
+ * Compose views embedded in leanback screens, which have no JellyfinTheme around them.
+ */
+internal fun currentAppColorScheme(): ColorScheme {
+	val prefs = runCatching { KoinPlatform.getKoinOrNull()?.getOrNull<UserPreferences>() }.getOrNull()
+		?: return colorScheme()
+	val theme = prefs[UserPreferences.appTheme]
+	return schemeCache.getOrPut(theme) { colorSchemeFor(theme) }
+}
+
+/** Set by [JellyfinTheme]; when absent the user's app theme decides. */
+val LocalColorScheme = staticCompositionLocalOf<ColorScheme?> { null }

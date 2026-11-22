@@ -9,6 +9,9 @@ enum class AppTheme(
 	/**
 	 * The purple haze theme: deep blue and purple gradient
 	 */
+	/** Gruvbox dark: warm retro palette (Erg default) */
+	GRUVBOX(R.string.pref_theme_gruvbox),
+
 	PURPLE_HAZE(R.string.pref_theme_purple_haze),
 	/**
 	 * The default OLED Dark theme based on https://github.com/LitCastVlog/jellyfin-androidtv-OLED fork theme

@@ -14,6 +14,7 @@ import timber.log.Timber
  */
 private val AppTheme.style
 	get() = when (this) {
+		AppTheme.GRUVBOX -> R.style.Theme_Jellyfin_Gruvbox
 		AppTheme.PURPLE_HAZE -> R.style.Theme_Jellyfin_PurpleHaze
 		AppTheme.DARK -> R.style.Theme_Jellyfin
 		AppTheme.EMERALD -> R.style.Theme_Jellyfin_Emerald

@@ -73,7 +73,7 @@ fun SeerrDiscoverScreen(
 	Box(
 		Modifier
 			.fillMaxSize()
-			.background(Color(0xFF101623))
+			.background(org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.background)
 	) {
 		// Fade between loading skeleton, content and error states
 		androidx.compose.animation.AnimatedContent(
@@ -91,7 +91,7 @@ fun SeerrDiscoverScreen(
 			SeerrDiscoverState.Loading -> DiscoverSkeleton()
 			is SeerrDiscoverState.Error -> Centered {
 				Column(horizontalAlignment = Alignment.CenterHorizontally) {
-					Text(stringResource(R.string.seerr_load_failed, current.message), color = Color.White)
+					Text(stringResource(R.string.seerr_load_failed, current.message), color = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onBackground)
 					Button(onClick = { viewModel.refresh() }, modifier = Modifier.padding(top = 16.dp)) {
 						Text(stringResource(R.string.seerr_retry))
 					}
@@ -151,7 +151,7 @@ private fun DiscoverContent(
 			Row(verticalAlignment = Alignment.CenterVertically) {
 				Text(
 					stringResource(R.string.seerr_discover),
-					color = Color.White,
+					color = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onBackground,
 					fontSize = 28.sp,
 					fontWeight = FontWeight.Bold,
 					modifier = Modifier.padding(end = 24.dp),
@@ -177,7 +177,7 @@ private fun DiscoverContent(
 		if (searchResults != null) {
 			item(key = "search") {
 				if (searchResults.isEmpty()) {
-					Text(stringResource(R.string.seerr_no_results), color = Color.White.copy(alpha = 0.7f))
+					Text(stringResource(R.string.seerr_no_results), color = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onBackground.copy(alpha = 0.7f))
 				} else {
 					PosterRow(
 						title = stringResource(R.string.seerr_row_search_results),
@@ -209,7 +209,7 @@ private fun PosterRow(
 	firstItemFocus: FocusRequester? = null,
 ) {
 	Column {
-		Text(title, color = Color.White, fontSize = 20.sp, modifier = Modifier.padding(bottom = 10.dp))
+		Text(title, color = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onBackground, fontSize = 20.sp, modifier = Modifier.padding(bottom = 10.dp))
 		LazyRow(
 			horizontalArrangement = Arrangement.spacedBy(14.dp),
 			contentPadding = PaddingValues(vertical = 4.dp, horizontal = 2.dp),
@@ -244,8 +244,8 @@ private fun PosterCard(
 			Modifier
 				.size(PosterWidth, PosterHeight)
 				.clip(CardShape)
-				.background(Color.White.copy(alpha = 0.08f), CardShape)
-				.then(if (ringAlpha > 0f) Modifier.border(2.dp, Color.White.copy(alpha = ringAlpha), CardShape) else Modifier)
+				.background(org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onBackground.copy(alpha = 0.08f), CardShape)
+				.then(if (ringAlpha > 0f) Modifier.border(2.dp, org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onBackground.copy(alpha = ringAlpha), CardShape) else Modifier)
 				.clickable(interactionSource = interaction, indication = null, onClick = onClick)
 				.focusable(interactionSource = interaction)
 		) {
@@ -260,7 +260,7 @@ private fun PosterCard(
 			} else {
 				Text(
 					item.displayTitle,
-					color = Color.White,
+					color = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onBackground,
 					modifier = Modifier.align(Alignment.Center).padding(8.dp),
 				)
 			}
@@ -268,7 +268,7 @@ private fun PosterCard(
 		}
 		Text(
 			text = listOfNotNull(item.displayTitle, item.year).joinToString(" · "),
-			color = if (focused) Color.White else Color.White.copy(alpha = 0.7f),
+			color = if (focused) org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onBackground else org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onBackground.copy(alpha = 0.7f),
 			fontSize = 12.sp,
 			maxLines = 1,
 			overflow = TextOverflow.Ellipsis,
@@ -288,7 +288,7 @@ fun StatusBadge(status: SeerrMediaStatus, modifier: Modifier = Modifier) {
 	}
 	Text(
 		stringResource(label),
-		color = Color.White,
+		color = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onBackground,
 		fontSize = 10.sp,
 		fontWeight = FontWeight.SemiBold,
 		modifier = modifier
@@ -324,10 +324,10 @@ private fun SetupNeeded(onOpenSettings: () -> Unit) {
 	LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
 	Centered {
 		Column(horizontalAlignment = Alignment.CenterHorizontally) {
-			Text(stringResource(R.string.seerr_setup_needed), color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+			Text(stringResource(R.string.seerr_setup_needed), color = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onBackground, fontSize = 24.sp, fontWeight = FontWeight.Bold)
 			Text(
 				stringResource(R.string.seerr_setup_needed_caption),
-				color = Color.White.copy(alpha = 0.7f),
+				color = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onBackground.copy(alpha = 0.7f),
 				modifier = Modifier.padding(top = 8.dp, bottom = 20.dp),
 			)
 			Button(onClick = onOpenSettings, modifier = Modifier.focusRequester(focus)) {
@@ -342,25 +342,28 @@ internal fun Centered(content: @Composable () -> Unit) {
 	Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { content() }
 }
 
-/** Left-to-right scrim used over backdrops so text stays readable. */
-internal val BackdropScrim = Brush.horizontalGradient(
-	0f to Color(0xF2101623),
-	0.55f to Color(0xB3101623),
-	1f to Color(0x33101623),
-)
-
-internal val BottomScrim = Brush.verticalGradient(
-	0.5f to Color.Transparent,
-	1f to Color(0xFF101623),
-)
+/** Scrims over backdrops so text stays readable, tinted with the theme background. */
+@Composable
+private fun backdropScrims(): Pair<Brush, Brush> {
+	val bg = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.background
+	return Brush.horizontalGradient(
+		0f to bg.copy(alpha = 0.95f),
+		0.55f to bg.copy(alpha = 0.7f),
+		1f to bg.copy(alpha = 0.2f),
+	) to Brush.verticalGradient(
+		0.5f to Color.Transparent,
+		1f to bg,
+	)
+}
 
 @Composable
 internal fun FullBleedBackdrop(path: String?) {
 	val url = seerrImageUrl(path, "w1280") ?: return
 	Box(Modifier.fillMaxSize()) {
 		SeerrImage(url = url, contentDescription = null, crossfadeMillis = 400, modifier = Modifier.fillMaxSize())
-		Box(Modifier.fillMaxSize().background(BackdropScrim))
-		Box(Modifier.fillMaxSize().background(BottomScrim))
+		val (side, bottom) = backdropScrims()
+		Box(Modifier.fillMaxSize().background(side))
+		Box(Modifier.fillMaxSize().background(bottom))
 	}
 }
 

@@ -130,7 +130,7 @@ fun HomeToolbar(
                     .size(32.dp)
                     .clip(CircleShape)
                     .background(
-                        if (isFocused) Color.White.copy(alpha = 0.85f) else Color.Transparent,
+                        if (isFocused) org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onBackground.copy(alpha = 0.9f) else Color.Transparent,
                         CircleShape
                     ),
                 contentAlignment = Alignment.Center
@@ -163,7 +163,7 @@ fun HomeToolbar(
                             painter = painterResource(R.drawable.ic_user),
                             contentDescription = stringResource(R.string.lbl_switch_user),
                             modifier = Modifier.size(17.dp),
-                            tint = Color.White
+                            tint = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onBackground
                         )
                     }
                 }
@@ -191,7 +191,7 @@ fun HomeToolbar(
                     }
                     .background(
                         animateColorAsState(
-                        	if (isSearchFocused) Color.White.copy(alpha = 0.85f) else Color.Transparent,
+                        	if (isSearchFocused) org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onBackground.copy(alpha = 0.9f) else Color.Transparent,
                         	tween(150),
                         	label = "isSearchFocused",
                         ).value
@@ -221,7 +221,7 @@ fun HomeToolbar(
                     Icon(
                         painter = painterResource(R.drawable.ic_search),
                         contentDescription = stringResource(R.string.lbl_search),
-                        tint = if (isSearchFocused) Color.Black else Color.White,
+                        tint = if (isSearchFocused) org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.background else org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onBackground,
                         modifier = Modifier
                             .let { modifier ->
                                 if (isSearchFocused) {
@@ -236,7 +236,7 @@ fun HomeToolbar(
                     if (isSearchFocused) {
                         Text(
                             text = "Search",
-                            color = if (isSearchFocused) Color.Black else Color.White,
+                            color = if (isSearchFocused) org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.background else org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onBackground,
                             fontSize = 14.sp,
                             modifier = Modifier
                                 .padding(start = 4.dp)
@@ -267,7 +267,7 @@ fun HomeToolbar(
                     }
                     .background(
                         animateColorAsState(
-                        	if (isLibraryFocused) Color.White.copy(alpha = 0.85f) else Color.Transparent,
+                        	if (isLibraryFocused) org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onBackground.copy(alpha = 0.9f) else Color.Transparent,
                         	tween(150),
                         	label = "isLibraryFocused",
                         ).value
@@ -297,7 +297,7 @@ fun HomeToolbar(
                     Icon(
                         painter = painterResource(R.drawable.ic_loop),
                         contentDescription = stringResource(R.string.lbl_library),
-                        tint = if (isLibraryFocused) Color.Black else Color.White,
+                        tint = if (isLibraryFocused) org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.background else org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onBackground,
                         modifier = Modifier
                             .let { modifier ->
                                 if (isLibraryFocused) {
@@ -312,7 +312,7 @@ fun HomeToolbar(
                     if (isLibraryFocused) {
                         Text(
                             text = "Home",
-                            color = if (isLibraryFocused) Color.Black else Color.White,
+                            color = if (isLibraryFocused) org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.background else org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onBackground,
                             fontSize = 14.sp,
                             modifier = Modifier
                                 .padding(start = 4.dp)
@@ -344,7 +344,7 @@ fun HomeToolbar(
                         }
                         .background(
                             animateColorAsState(
-                            	if (isLiveTvFocused) Color.White.copy(alpha = 0.85f) else Color.Transparent,
+                            	if (isLiveTvFocused) org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onBackground.copy(alpha = 0.9f) else Color.Transparent,
                             	tween(150),
                             	label = "isLiveTvFocused",
                             ).value
@@ -374,7 +374,7 @@ fun HomeToolbar(
                         Icon(
                             painter = painterResource(R.drawable.ic_live),
                             contentDescription = stringResource(R.string.lbl_live_tv),
-                            tint = if (isLiveTvFocused) Color.Black else Color.White,
+                            tint = if (isLiveTvFocused) org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.background else org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onBackground,
                             modifier = Modifier
                                 .let { modifier ->
                                     if (isLiveTvFocused) {
@@ -389,7 +389,7 @@ fun HomeToolbar(
                         if (isLiveTvFocused) {
                             Text(
                                 text = "Live",
-                                color = if (isLiveTvFocused) Color.Black else Color.White,
+                                color = if (isLiveTvFocused) org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.background else org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onBackground,
                                 fontSize = 14.sp,
                                 modifier = Modifier
                                     .padding(start = 4.dp)
@@ -471,7 +471,7 @@ fun HomeToolbar(
                         }
                         .background(
                             animateColorAsState(
-                            	if (isMasksFocused) Color.White.copy(alpha = 0.85f) else Color.Transparent,
+                            	if (isMasksFocused) org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onBackground.copy(alpha = 0.9f) else Color.Transparent,
                             	tween(150),
                             	label = "isMasksFocused",
                             ).value
@@ -501,7 +501,7 @@ fun HomeToolbar(
                         Icon(
                             painter = painterResource(R.drawable.ic_dice),
                             contentDescription = stringResource(R.string.show_random_button_summary),
-                            tint = if (isMasksFocused) Color.Black else Color.White.copy(alpha = 0.7f),
+                            tint = if (isMasksFocused) org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.background else org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onBackground.copy(alpha = 0.7f),
                             modifier = Modifier
                                 .let { modifier ->
                                     if (isMasksFocused) {
@@ -516,7 +516,7 @@ fun HomeToolbar(
                         if (isMasksFocused) {
                             Text(
                                 text = "Random",
-                                color = if (isMasksFocused) Color.Black else Color.White,
+                                color = if (isMasksFocused) org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.background else org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onBackground,
                                 fontSize = 14.sp,
                                 modifier = Modifier
                                     .padding(start = 4.dp)
@@ -547,7 +547,7 @@ fun HomeToolbar(
                     }
                     .background(
                         animateColorAsState(
-                        	if (isSettingsFocused) Color.White.copy(alpha = 0.85f) else Color.Transparent,
+                        	if (isSettingsFocused) org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onBackground.copy(alpha = 0.9f) else Color.Transparent,
                         	tween(150),
                         	label = "isSettingsFocused",
                         ).value
@@ -577,7 +577,7 @@ fun HomeToolbar(
                     Icon(
                         painter = painterResource(R.drawable.ic_settings),
                         contentDescription = stringResource(R.string.lbl_settings),
-                        tint = if (isSettingsFocused) Color.Black else Color.White.copy(alpha = 0.7f),
+                        tint = if (isSettingsFocused) org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.background else org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onBackground.copy(alpha = 0.7f),
                         modifier = Modifier
                             .let { modifier ->
                                 if (isSettingsFocused) {
@@ -592,7 +592,7 @@ fun HomeToolbar(
                     if (isSettingsFocused) {
                         Text(
                             text = "Settings",
-                            color = if (isSettingsFocused) Color.Black else Color.White,
+                            color = if (isSettingsFocused) org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.background else org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onBackground,
                             fontSize = 14.sp,
                             modifier = Modifier
                                 .padding(start = 4.dp)
@@ -622,7 +622,7 @@ fun HomeToolbar(
                     }
                     .background(
                         animateColorAsState(
-                        	if (isFavoritesFocused) Color.White.copy(alpha = 0.85f) else Color.Transparent,
+                        	if (isFavoritesFocused) org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onBackground.copy(alpha = 0.9f) else Color.Transparent,
                         	tween(150),
                         	label = "isFavoritesFocused",
                         ).value
@@ -652,7 +652,7 @@ fun HomeToolbar(
                     Icon(
                         painter = painterResource(R.drawable.ic_heart),
                         contentDescription = stringResource(R.string.lbl_favorites),
-                        tint = if (isFavoritesFocused) Color.Red else Color.White.copy(alpha = 0.7f),
+                        tint = if (isFavoritesFocused) org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.recording else org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onBackground.copy(alpha = 0.7f),
                         modifier = Modifier
                             .let { modifier ->
                                 if (isFavoritesFocused) {
@@ -666,7 +666,7 @@ fun HomeToolbar(
                     if (isFavoritesFocused) {
                         Text(
                             text = "Favorites",
-                            color = if (isFavoritesFocused) Color.Black else Color.White,
+                            color = if (isFavoritesFocused) org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.background else org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onBackground,
                             fontSize = 14.sp,
                             modifier = Modifier
                                 .padding(start = 4.dp)
@@ -696,7 +696,7 @@ fun HomeToolbar(
                     }
                     .background(
                         animateColorAsState(
-                        	if (isDiscoverFocused) Color.White.copy(alpha = 0.85f) else Color.Transparent,
+                        	if (isDiscoverFocused) org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onBackground.copy(alpha = 0.9f) else Color.Transparent,
                         	tween(150),
                         	label = "isDiscoverFocused",
                         ).value
@@ -726,7 +726,7 @@ fun HomeToolbar(
                     Icon(
                         painter = painterResource(R.drawable.ic_discover),
                         contentDescription = stringResource(R.string.seerr_discover),
-                        tint = if (isDiscoverFocused) Color.Black else Color.White.copy(alpha = 0.7f),
+                        tint = if (isDiscoverFocused) org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.background else org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onBackground.copy(alpha = 0.7f),
                         modifier = Modifier
                             .let { modifier ->
                                 if (isDiscoverFocused) {
@@ -740,7 +740,7 @@ fun HomeToolbar(
                     if (isDiscoverFocused) {
                         Text(
                             text = stringResource(R.string.seerr_discover),
-                            color = if (isDiscoverFocused) Color.Black else Color.White,
+                            color = if (isDiscoverFocused) org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.background else org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onBackground,
                             fontSize = 14.sp,
                             modifier = Modifier
                                 .padding(start = 4.dp)

@@ -61,7 +61,7 @@ class UserPreferences(context: Context) : SharedPreferenceStore(
 		/**
 		 * Select the app theme
 		 */
-		var appTheme = enumPreference("app_theme", AppTheme.MUTED_PURPLE)
+		var appTheme = enumPreference("app_theme", AppTheme.GRUVBOX)
 
 		/**
 		 * Behavior of app background while browsing

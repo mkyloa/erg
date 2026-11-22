@@ -26,7 +26,7 @@ fun JellyfinTheme(
 
 object JellyfinTheme {
 	val colorScheme: ColorScheme
-		@Composable @ReadOnlyComposable get() = LocalColorScheme.current
+		@Composable @ReadOnlyComposable get() = LocalColorScheme.current ?: currentAppColorScheme()
 
 	val typography: Typography
 		@Composable @ReadOnlyComposable get() = LocalTypography.current

@@ -384,7 +384,7 @@ private fun CardViewHolderContent(
 			modifier = Modifier
 				.size(size)
 				// Erg: flat cards, white focus ring instead of zoom/dim
-				.then(if (ringAlpha > 0f) Modifier.border(2.dp, Tokens.Color.colorWhite.copy(alpha = ringAlpha), JellyfinTheme.shapes.medium) else Modifier)
+				.then(if (ringAlpha > 0f) Modifier.border(2.dp, JellyfinTheme.colorScheme.onBackground.copy(alpha = ringAlpha), JellyfinTheme.shapes.medium) else Modifier)
 		)
 	}
 

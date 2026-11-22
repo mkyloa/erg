@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Gruvbox dark: warm retro palette (github.com/morhetz/gruvbox) -->
+<resources>
+    <style name="Theme.Jellyfin.Gruvbox" parent="Theme.Jellyfin">
+        <!-- Base colors -->
+        <item name="colorPrimary">@color/gruvbox_bg0</item>
+        <item name="colorPrimaryDark">@color/gruvbox_bg0_h</item>
+        <item name="colorAccent">@color/gruvbox_yellow</item>
+        <item name="colorSecondary">@color/gruvbox_aqua</item>
+        <item name="android:colorPrimary">@color/gruvbox_bg0</item>
+        <item name="android:colorPrimaryDark">@color/gruvbox_bg0_h</item>
+        <item name="android:colorAccent">@color/gruvbox_yellow</item>
+
+        <!-- Background and window -->
+        <item name="android:windowBackground">@color/gruvbox_bg0</item>
+        <item name="android:statusBarColor">@color/gruvbox_bg0_h</item>
+        <item name="android:navigationBarColor">@color/gruvbox_bg0_h</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowAnimationStyle">@style/WindowAnimation</item>
+        <item name="android:windowDisablePreview">true</item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:activityOpenEnterAnimation">@null</item>
+        <item name="android:activityOpenExitAnimation">@null</item>
+        <item name="android:activityCloseEnterAnimation">@null</item>
+        <item name="android:activityCloseExitAnimation">@null</item>
+        <item name="android:windowEnterAnimation">@null</item>
+        <item name="android:windowExitAnimation">@null</item>
+
+        <!-- Card and UI elements -->
+        <item name="cardBackground">@color/gruvbox_bg1</item>
+        <item name="cardViewBackground">@color/transparent</item>
+        <item name="cardImageBackground">@color/transparent</item>
+        <item name="cardRounding">4dp</item>
+
+        <!-- Text colors -->
+        <item name="textColorPrimary">@color/gruvbox_fg</item>
+        <item name="textColorSecondary">@color/gruvbox_fg4</item>
+        <item name="headerTextColor">@color/gruvbox_fg</item>
+        <item name="defaultSearchColor">@color/gruvbox_fg</item>
+
+        <!-- Buttons -->
+        <item name="buttonBackground">@color/gruvbox_button_normal</item>
+        <item name="buttonTextColor">@color/gruvbox_fg</item>
+        <item name="android:colorButtonNormal">@color/gruvbox_button_normal</item>
+        <item name="buttonDefaultNormalBackground">@color/gruvbox_button_normal</item>
+        <item name="buttonDefaultHighlightBackground">@color/gruvbox_bg2</item>
+        <item name="buttonRounding">5dp</item>
+
+        <!-- Input fields -->
+        <item name="inputDefaultStrokeWidth">2dp</item>
+        <item name="inputDefaultStrokeColor">@color/gruvbox_yellow</item>
+        <item name="inputDefaultHighlightBackground">@color/gruvbox_bg2</item>
+        <item name="inputRounding">3dp</item>
+
+        <!-- Surfaces -->
+        <item name="surfaceColor">@color/gruvbox_bg1</item>
+        <item name="onSurfaceColor">@color/gruvbox_fg</item>
+        <item name="popupMenuBackground">@color/gruvbox_bg1</item>
+        <item name="popupMenuRounding">3dp</item>
+
+        <!-- Progress bars -->
+        <item name="progressBackground">@color/gruvbox_bg1</item>
+        <item name="progressPrimary">@color/gruvbox_yellow</item>
+        <item name="progressSecondary">@color/gruvbox_bg2</item>
+
+        <!-- Icons -->
+        <item name="controlIconBackground">@color/gruvbox_button_normal</item>
+        <item name="controlIconForegroundActive">@color/gruvbox_yellow</item>
+        <item name="controlIconForegroundInactive">@color/gruvbox_fg4</item>
+
+        <!-- QR Code -->
+        <item name="qrBackground">@color/white</item>
+        <item name="qrForeground">@color/black</item>
+
+        <!-- Tile backgrounds -->
+        <item name="tile_port_person_bg">@color/gruvbox_bg1</item>
+        <item name="tile_user_bg">@color/gruvbox_bg1</item>
+        <item name="tile_port_video_bg">@color/gruvbox_bg1</item>
+        <item name="tile_land_folder_bg">@color/gruvbox_bg1</item>
+        <item name="tile_chapter_bg">@color/gruvbox_bg1</item>
+        <item name="tile_land_tv_bg">@color/gruvbox_bg1</item>
+        <item name="tile_port_tv_bg">@color/gruvbox_bg1</item>
+        <item name="tile_actors_bg">@color/gruvbox_bg1</item>
+        <item name="tile_land_photo_bg">@color/gruvbox_bg1</item>
+        <item name="tile_port_folder_bg">@color/gruvbox_bg1</item>
+        <item name="tile_land_series_timer_bg">@color/gruvbox_bg1</item>
+        <item name="tile_audio_bg">@color/gruvbox_bg1</item>
+        <item name="tile_artists_bg">@color/gruvbox_bg1</item>
+        <item name="tile_genres_bg">@color/gruvbox_bg1</item>
+        <item name="tile_search_bg">@color/gruvbox_bg1</item>
+        <item name="tile_suggestions_bg">@color/gruvbox_bg1</item>
+        <item name="tile_port_grid_bg">@color/gruvbox_bg1</item>
+        <item name="tile_letters_bg">@color/gruvbox_bg1</item>
+        <item name="tile_port_guide_bg">@color/gruvbox_bg1</item>
+        <item name="tile_port_series_timer_bg">@color/gruvbox_bg1</item>
+
+        <!-- Focus Border Color -->
+        <item name="focusBorderColor">@color/gruvbox_fg</item>
+
+
+        <!-- Media Folders Buttons -->
+        <item name="mediaFolderButtonFocusedBackground">@color/gruvbox_bg2</item>
+        <item name="mediaFolderButtonTextColor">@color/gruvbox_fg</item>
+        <item name="mediaFolderButtonFocusedTextColor">@color/gruvbox_fg</item>
+        <item name="tile_port_time_bg">@color/gruvbox_bg1</item>
+
+        <!-- Disable card scaling by setting state list animator to null -->
+        <item name="android:stateListAnimator">@null</item>
+        <item name="android:background">@color/transparent</item>
+
+        <!-- Other -->
+        <item name="overlayDimDimmedLevel">30%</item>
+
+        <!-- Backdrop Dimming -->
+        <item name="background_filter">@color/black</item>
+        <!-- Backdrop Fading Color -->
+        <item name="backdrop_fading_color">@color/gruvbox_bg0</item>
+        <item name="defaultBackground">@color/gruvbox_bg0</item>
+        <item name="browseTitleViewLayout">@layout/view_lb_browse_title</item>
+        <item name="preferenceTheme">@style/PreferenceThemeOverlayLeanback</item>
+        <item name="android:popupMenuStyle">@style/PopupMenu</item>
+        <item name="android:popupWindowStyle">@style/PopupWindow</item>
+        <item name="android:datePickerStyle">@style/DatePickerCustom</item>
+        <item name="rowHeaderStyle">@style/Widget.Jellyfin.Row.Header</item>
+    </style>
+
+    <!-- Preferences theme -->
+    <style name="Theme.Jellyfin.Gruvbox.Preferences" parent="Theme.Jellyfin.Preferences">
+        <item name="colorPrimary">@color/gruvbox_bg0</item>
+        <item name="colorPrimaryDark">@color/gruvbox_bg0_h</item>
+        <item name="colorAccent">@color/gruvbox_yellow</item>
+        <item name="android:windowBackground">@color/gruvbox_bg0</item>
+    </style>
+</resources>

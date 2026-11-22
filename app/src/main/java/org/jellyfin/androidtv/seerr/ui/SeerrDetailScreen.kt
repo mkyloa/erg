@@ -50,7 +50,7 @@ fun SeerrDetailScreen(
 	Box(
 		Modifier
 			.fillMaxSize()
-			.background(Color(0xFF101623))
+			.background(org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.background)
 	) {
 		androidx.compose.animation.AnimatedContent(
 			targetState = state,
@@ -69,7 +69,7 @@ fun SeerrDetailScreen(
 				)
 			}
 			is SeerrDetailState.Error -> Centered {
-				Text(stringResource(R.string.seerr_load_failed, current.message), color = Color.White)
+				Text(stringResource(R.string.seerr_load_failed, current.message), color = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onBackground)
 			}
 
 			is SeerrDetailState.Content -> DetailContent(current, viewModel, onOpenLibraryItem)
@@ -112,11 +112,11 @@ private fun DetailContent(
 				.fillMaxHeight(),
 			verticalArrangement = Arrangement.Center,
 		) {
-			Text(details.displayTitle, color = Color.White, fontSize = 34.sp, fontWeight = FontWeight.Bold)
+			Text(details.displayTitle, color = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onBackground, fontSize = 34.sp, fontWeight = FontWeight.Bold)
 
 			Text(
 				metaLine(details),
-				color = Color.White.copy(alpha = 0.85f),
+				color = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onBackground.copy(alpha = 0.85f),
 				fontSize = 16.sp,
 				modifier = Modifier.padding(top = 8.dp),
 			)
@@ -124,12 +124,12 @@ private fun DetailContent(
 			StatusBadge(details.status, Modifier.padding(top = 10.dp))
 
 			details.tagline?.takeIf { it.isNotBlank() }?.let {
-				Text(it, color = Color.White.copy(alpha = 0.7f), fontSize = 15.sp, modifier = Modifier.padding(top = 12.dp))
+				Text(it, color = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onBackground.copy(alpha = 0.7f), fontSize = 15.sp, modifier = Modifier.padding(top = 12.dp))
 			}
 
 			Text(
 				details.overview.orEmpty(),
-				color = Color.White,
+				color = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onBackground,
 				fontSize = 15.sp,
 				maxLines = 6,
 				overflow = TextOverflow.Ellipsis,
@@ -230,7 +230,7 @@ private fun SeasonPicker(
 
 	LazyColumn(
 		modifier = modifier
-			.background(Color(0xE6101623), RoundedCornerShape(12.dp))
+			.background(org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.background.copy(alpha = 0.9f), RoundedCornerShape(12.dp))
 			.padding(12.dp),
 		contentPadding = PaddingValues(vertical = 8.dp),
 		verticalArrangement = Arrangement.spacedBy(4.dp),

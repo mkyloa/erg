@@ -323,7 +323,7 @@ private fun Android12CompatibleCarousel(
 			}
 			.border(
 				width = 2.dp,
-				color = Color.White.copy(alpha = borderAlpha),
+				color = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onBackground.copy(alpha = borderAlpha),
 				shape = RoundedCornerShape(12.dp),
 			)
 			.clip(RoundedCornerShape(12.dp))
