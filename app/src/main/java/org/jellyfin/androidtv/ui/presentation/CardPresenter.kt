@@ -5,6 +5,7 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -375,6 +376,8 @@ private fun CardViewHolderContent(
 			},
 			modifier = Modifier
 				.size(size)
+				// DUNE: flat cards, white focus ring instead of zoom/dim
+				.then(if (focused) Modifier.border(2.dp, Tokens.Color.colorWhite, JellyfinTheme.shapes.medium) else Modifier)
 		)
 	}
 

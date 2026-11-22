@@ -8,13 +8,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.AbstractComposeView
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.jellyfin.androidtv.R
 import org.jellyfin.androidtv.preference.UserPreferences
@@ -93,6 +93,9 @@ fun InfoRowSeriesStatus(
 			SeriesStatus.CONTINUING -> InfoRowItem(
 				contentDescription = stringResource(R.string.lbl__continuing),
 				colors = InfoRowColors.Green,
+				backgroundCornerRadius = 4.dp,
+				horizontalPadding = 2.dp,
+				textSize = 9.sp,
 			) {
 				Text(stringResource(R.string.lbl__continuing))
 			}
@@ -100,6 +103,9 @@ fun InfoRowSeriesStatus(
 			SeriesStatus.ENDED -> InfoRowItem(
 				contentDescription = stringResource(R.string.lbl_ended),
 				colors = InfoRowColors.Red,
+				backgroundCornerRadius = 4.dp,
+				horizontalPadding = 2.dp,
+				textSize = 9.sp,
 			) {
 				Text(stringResource(R.string.lbl_ended))
 			}
@@ -107,6 +113,9 @@ fun InfoRowSeriesStatus(
 			SeriesStatus.UNRELEASED -> InfoRowItem(
 				contentDescription = stringResource(R.string.unreleased),
 				colors = InfoRowColors.Default,
+				backgroundCornerRadius = 4.dp,
+				horizontalPadding = 2.dp,
+				textSize = 9.sp,
 			) {
 				Text(stringResource(R.string.unreleased))
 			}
@@ -119,7 +128,7 @@ fun BaseItemInfoRowRuntime(
 	runTime: Duration,
 ) {
 	InfoRowItem(
-		icon = ImageVector.vectorResource(id = R.drawable.ic_time),
+		icon = painterResource(id = R.drawable.ic_time),
 		contentDescription = null,
 	) {
 		Text(TimeUtils.formatMillis(runTime.inWholeMilliseconds))
@@ -265,6 +274,7 @@ fun BaseItemInfoRow(
 	item: BaseItemDto,
 	mediaSource: MediaSourceInfo?,
 	includeRuntime: Boolean,
+	showMediaDetails: Boolean = false,
 ) {
 	val userPreferences = koinInject<UserPreferences>()
 
@@ -281,7 +291,7 @@ fun BaseItemInfoRow(
 				InfoRowDate(item)
 				if (includeRuntime) item.runTimeTicks?.ticks?.let { BaseItemInfoRowRuntime(it) }
 				item.officialRating?.let { InfoRowParentalRating(it) }
-				mediaSource?.let { InfoRowMediaDetails(it) }
+				if (showMediaDetails) mediaSource?.let { InfoRowMediaDetails(it) }
 			}
 
 			BaseItemKind.BOX_SET -> {
@@ -299,7 +309,7 @@ fun BaseItemInfoRow(
 				val runtime = item.cumulativeRunTimeTicks ?: item.runTimeTicks
 				if (includeRuntime) runtime?.ticks?.let { BaseItemInfoRowRuntime(it) }
 				item.officialRating?.let { InfoRowParentalRating(it) }
-				mediaSource?.let { InfoRowMediaDetails(it) }
+				if (showMediaDetails) mediaSource?.let { InfoRowMediaDetails(it) }
 			}
 
 			BaseItemKind.SERIES -> {
@@ -307,7 +317,7 @@ fun BaseItemInfoRow(
 				if (includeRuntime) item.runTimeTicks?.ticks?.let { BaseItemInfoRowRuntime(it) }
 				InfoRowSeriesStatus(item)
 				item.officialRating?.let { InfoRowParentalRating(it) }
-				mediaSource?.let { InfoRowMediaDetails(it) }
+				if (showMediaDetails) mediaSource?.let { InfoRowMediaDetails(it) }
 			}
 
 			BaseItemKind.PROGRAM -> {
@@ -345,7 +355,7 @@ fun BaseItemInfoRow(
 
 				if (includeRuntime) item.runTimeTicks?.ticks?.let { BaseItemInfoRowRuntime(it) }
 				item.officialRating?.let { InfoRowParentalRating(it) }
-				mediaSource?.let { InfoRowMediaDetails(it) }
+				if (showMediaDetails) mediaSource?.let { InfoRowMediaDetails(it) }
 			}
 
 			BaseItemKind.MUSIC_ARTIST -> {
@@ -385,14 +395,14 @@ fun BaseItemInfoRow(
 				val runtime = item.cumulativeRunTimeTicks ?: item.runTimeTicks
 				if (includeRuntime) runtime?.ticks?.let { BaseItemInfoRowRuntime(it) }
 				item.officialRating?.let { InfoRowParentalRating(it) }
-				mediaSource?.let { InfoRowMediaDetails(it) }
+				if (showMediaDetails) mediaSource?.let { InfoRowMediaDetails(it) }
 			}
 
 			else -> {
 				InfoRowDate(item)
 				if (includeRuntime) item.runTimeTicks?.ticks?.let { BaseItemInfoRowRuntime(it) }
 				item.officialRating?.let { InfoRowParentalRating(it) }
-				mediaSource?.let { InfoRowMediaDetails(it) }
+				if (showMediaDetails) mediaSource?.let { InfoRowMediaDetails(it) }
 			}
 		}
 	}
@@ -402,42 +412,50 @@ fun BaseItemInfoRow(
  * Exposes the [BaseItemInfoRow] composable as Android view.
  */
 class BaseItemInfoRowView @JvmOverloads constructor(
-	context: Context,
-	attrs: AttributeSet? = null,
+    context: Context,
+    attrs: AttributeSet? = null,
 ) : AbstractComposeView(context, attrs) {
-	private val _item = MutableStateFlow<BaseItemDto?>(null)
-	private val _mediaSource = MutableStateFlow<MediaSourceInfo?>(null)
-	private val _includeRuntime = MutableStateFlow(false)
+    private val _item = MutableStateFlow<BaseItemDto?>(null)
+    private val _mediaSource = MutableStateFlow<MediaSourceInfo?>(null)
+    private val _includeRuntime = MutableStateFlow(false)
+    private val _showMediaDetails = MutableStateFlow(false)
 
-	var item: BaseItemDto?
-		get() = _item.value
-		set(value) {
-			_item.value = value
-		}
+    var item: BaseItemDto?
+        get() = _item.value
+        set(value) {
+            _item.value = value
+        }
 
-	var mediaSource: MediaSourceInfo?
-		get() = _mediaSource.value
-		set(value) {
-			_mediaSource.value = value
-		}
+    var mediaSource: MediaSourceInfo?
+        get() = _mediaSource.value
+        set(value) {
+            _mediaSource.value = value
+        }
 
-	var includeRuntime: Boolean
-		get() = _includeRuntime.value
-		set(value) {
-			_includeRuntime.value = value
-		}
+    var includeRuntime: Boolean
+        get() = _includeRuntime.value
+        set(value) {
+            _includeRuntime.value = value
+        }
+
+    var showMediaDetails: Boolean
+        get() = _showMediaDetails.value
+        set(value) {
+            _showMediaDetails.value = value
+        }
 
 	init {
 		isFocusable = false
 		descendantFocusability = FOCUS_BLOCK_DESCENDANTS
 	}
 
-	@Composable
-	override fun Content() {
-		val item by _item.collectAsState()
-		val mediaSource by _mediaSource.collectAsState()
-		val includeRuntime by _includeRuntime.collectAsState()
+    @Composable
+    override fun Content() {
+        val item by _item.collectAsState()
+        val mediaSource by _mediaSource.collectAsState()
+        val includeRuntime by _includeRuntime.collectAsState()
+        val showMediaDetails by _showMediaDetails.collectAsState()
 
-		item?.let { BaseItemInfoRow(it, mediaSource, includeRuntime) }
-	}
+        item?.let { BaseItemInfoRow(it, mediaSource, includeRuntime, showMediaDetails) }
+    }
 }

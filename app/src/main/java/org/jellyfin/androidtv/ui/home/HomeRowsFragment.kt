@@ -5,6 +5,7 @@ import android.view.KeyEvent
 import android.view.View
 import androidx.leanback.app.RowsSupportFragment
 import androidx.leanback.widget.ListRow
+import androidx.leanback.widget.ObjectAdapter
 import androidx.leanback.widget.OnItemViewClickedListener
 import androidx.leanback.widget.OnItemViewSelectedListener
 import androidx.leanback.widget.Presenter
@@ -15,6 +16,8 @@ import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
@@ -24,6 +27,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import org.jellyfin.androidtv.R
 import org.jellyfin.androidtv.auth.repository.UserRepository
 import org.jellyfin.androidtv.constant.CustomMessage
 import org.jellyfin.androidtv.constant.HomeSectionType
@@ -51,12 +55,15 @@ import org.jellyfin.androidtv.ui.presentation.CardPresenter
 import org.jellyfin.androidtv.ui.presentation.MutableObjectAdapter
 import org.jellyfin.androidtv.ui.presentation.PositionableListRowPresenter
 import org.jellyfin.androidtv.util.KeyProcessor
-import org.jellyfin.playback.core.PlaybackManager
+import org.jellyfin.androidtv.util.apiclient.getUrl
+import org.jellyfin.androidtv.util.apiclient.itemImages
+import org.jellyfin.androidtv.util.apiclient.parentImages
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.sockets.subscribe
 import org.jellyfin.sdk.model.api.LibraryChangedMessage
 import org.jellyfin.sdk.model.api.UserDataChangedMessage
 import org.koin.android.ext.android.inject
+import org.jellyfin.playback.core.PlaybackManager
 import timber.log.Timber
 import kotlin.time.Duration.Companion.seconds
 
@@ -82,23 +89,29 @@ class HomeRowsFragment : RowsSupportFragment(), AudioEventListener, View.OnKeyLi
 	private var currentItem: BaseRowItem? = null
 	private var currentRow: ListRow? = null
 	private var justLoaded = true
-
 	// Special rows
 	private val notificationsRow by lazy { NotificationsHomeFragmentRow(lifecycleScope, notificationsRepository) }
 	private val nowPlaying by lazy { HomeFragmentNowPlayingRow(lifecycleScope, playbackManager, mediaManager) }
+	private val liveTVRow by lazy { HomeFragmentLiveTVRow(requireActivity(), userRepository) }
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
 
-		adapter = MutableObjectAdapter<Row>(PositionableListRowPresenter())
+		// Create a custom row presenter that keeps headers always visible
+		val rowPresenter = PositionableListRowPresenter(requireContext(), false, true)
+
+		// Set the adapter with our custom row presenter
+		adapter = MutableObjectAdapter<Row>(rowPresenter) as ObjectAdapter
 
 		lifecycleScope.launch(Dispatchers.IO) {
+			val startTime = System.currentTimeMillis()
 			val currentUser = withTimeout(30.seconds) {
 				userRepository.currentUser.filterNotNull().first()
 			}
 
 			// Start out with default sections
 			val homesections = userSettingPreferences.activeHomesections
+			val includeLiveTvRows = currentUser.policy?.enableLiveTvAccess == true
 
 			// Make sure the rows are empty
 			val rows = mutableListOf<HomeFragmentRow>()
@@ -106,36 +119,72 @@ class HomeRowsFragment : RowsSupportFragment(), AudioEventListener, View.OnKeyLi
 			// Check for coroutine cancellation
 			if (!isActive) return@launch
 
-			// Actually add the sections
-			for (section in homesections) when (section) {
-				HomeSectionType.LATEST_MEDIA -> rows.add(helper.loadRecentlyAdded(userViewsRepository.views.first()))
-				HomeSectionType.LIBRARY_TILES_SMALL -> rows.add(HomeFragmentViewsRow(small = false))
-				HomeSectionType.LIBRARY_BUTTONS -> rows.add(HomeFragmentViewsRow(small = true))
-				HomeSectionType.RESUME -> rows.add(helper.loadResumeVideo())
-				HomeSectionType.RESUME_AUDIO -> rows.add(helper.loadResumeAudio())
-				HomeSectionType.RESUME_BOOK -> Unit // Books are not (yet) supported
-				HomeSectionType.ACTIVE_RECORDINGS -> rows.add(helper.loadLatestLiveTvRecordings())
-				HomeSectionType.NEXT_UP -> rows.add(helper.loadNextUp())
-				HomeSectionType.LIVE_TV -> if (currentUser.policy?.enableLiveTvAccess == true) {
-					rows.add(HomeFragmentLiveTVRow(requireActivity(), userRepository))
-					rows.add(helper.loadOnNow())
-				}
-
-				HomeSectionType.NONE -> Unit
+			Timber.d("Starting parallel loading of ${homesections.size} home sections")
+			val userViewsDeferred = async(Dispatchers.IO) {
+				userViewsRepository.views.first()
 			}
+
+			// Load all home sections in parallel for better performance
+			val sectionRows = homesections.map { section ->
+				async(Dispatchers.IO) {
+					when (section) {
+						HomeSectionType.LATEST_MEDIA -> {
+							val views = userViewsDeferred.await()
+							helper.loadRecentlyAdded(views)
+						}
+						HomeSectionType.LIBRARY_TILES_SMALL -> HomeFragmentViewsRow(small = false)
+						HomeSectionType.LIBRARY_BUTTONS -> HomeFragmentViewsRow(small = true)
+						HomeSectionType.RESUME -> helper.loadResumeVideoLandscape()
+						HomeSectionType.RESUME_AUDIO -> helper.loadResumeAudio()
+						HomeSectionType.RESUME_BOOK -> null // Books are not (yet) supported
+						HomeSectionType.ACTIVE_RECORDINGS -> helper.loadLatestLiveTvRecordings()
+						HomeSectionType.NEXT_UP -> helper.loadNextUpLandscape()
+						HomeSectionType.CONTINUE_WATCHING_COMBINED -> helper.loadContinueWatchingCombined()
+						HomeSectionType.LIVE_TV -> if (includeLiveTvRows) {
+							listOf(liveTVRow, helper.loadOnNow())
+						} else {
+							emptyList<HomeFragmentRow>()
+						}
+						HomeSectionType.NONE -> null
+					}
+				}
+			}.awaitAll()
+
+			sectionRows.forEach { sectionResult ->
+				when (sectionResult) {
+					is List<*> -> rows.addAll(sectionResult.filterNotNull().map { it as HomeFragmentRow })
+					else -> sectionResult?.let { rows.add(it as HomeFragmentRow) }
+				}
+			}
+
+			val sectionLoadTime = System.currentTimeMillis() - startTime
+			Timber.d("Loaded ${rows.size} home sections in parallel in ${sectionLoadTime}ms")
 
 			// Add sections to layout
 			withContext(Dispatchers.Main) {
-				val cardPresenter = CardPresenter()
+				val cardPresenter = CardPresenter(false, 170)
 
-				// Add rows in order
-				notificationsRow.addToRowsAdapter(requireContext(), cardPresenter, adapter as MutableObjectAdapter<Row>)
-				nowPlaying.addToRowsAdapter(requireContext(), cardPresenter, adapter as MutableObjectAdapter<Row>)
-				for (row in rows) row.addToRowsAdapter(requireContext(), cardPresenter, adapter as MutableObjectAdapter<Row>)
-
-				// Wire up Live TV sibling rows so the On Now row removes the buttons row when empty
 				@Suppress("UNCHECKED_CAST")
 				val rowsAdapter = adapter as MutableObjectAdapter<Row>
+				val layoutStartTime = System.currentTimeMillis()
+
+				notificationsRow.addToRowsAdapter(requireContext(), cardPresenter, rowsAdapter)
+				nowPlaying.addToRowsAdapter(requireContext(), cardPresenter, rowsAdapter)
+
+				rows.forEach { row ->
+					try {
+						if (row is HomeFragmentViewsRow && row.shouldUseCenteredLayout()) {
+							row.addToRowsAdapter(requireContext(), cardPresenter, rowsAdapter)
+						} else {
+							row.addToRowsAdapter(requireContext(), cardPresenter, rowsAdapter)
+						}
+					} catch (e: Exception) {
+						Timber.e(e, "Error adding row to adapter")
+					}
+				}
+				// TODO(dune-next): genre rows (GenreManager) deferred to a later milestone
+
+				// Wire up Live TV sibling rows so the On Now row removes the buttons row when empty
 				for (i in 0 until rowsAdapter.size()) {
 					val listRow = rowsAdapter.get(i) as? ListRow ?: continue
 					val itemAdapter = listRow.adapter as? ItemRowAdapter ?: continue
@@ -144,7 +193,13 @@ class HomeRowsFragment : RowsSupportFragment(), AudioEventListener, View.OnKeyLi
 						if (previousRow != null) itemAdapter.setSiblingRow(previousRow)
 					}
 				}
+
+				val layoutTime = System.currentTimeMillis() - layoutStartTime
+				Timber.d("Home sections layout completed in ${layoutTime}ms")
 			}
+
+			val totalLoadTime = System.currentTimeMillis() - startTime
+			Timber.d("HomeRowsFragment initialization completed in ${totalLoadTime}ms")
 		}
 
 		onItemViewClickedListener = CompositeClickedListener().apply {
@@ -172,8 +227,10 @@ class HomeRowsFragment : RowsSupportFragment(), AudioEventListener, View.OnKeyLi
 					.launchIn(this)
 
 				api.webSocket.subscribe<LibraryChangedMessage>()
-					.onEach { refreshRows(force = true, delayed = false) }
-					.launchIn(this)
+				.onEach {
+					refreshRows(force = true, delayed = false)
+				}
+				.launchIn(this)
 			}
 		}
 
@@ -197,33 +254,56 @@ class HomeRowsFragment : RowsSupportFragment(), AudioEventListener, View.OnKeyLi
 		}
 
 		if (!justLoaded) {
-			//Re-retrieve anything that needs it but delay slightly so we don't take away gui landing
 			refreshCurrentItem()
 			refreshRows()
 		} else {
 			justLoaded = false
 		}
-
+		// Ensure views are updated when fragment is resumed
+		ensureViewsInitialized()
 		// Update audio queue
 		Timber.i("Updating audio queue in HomeFragment (onResume)")
-		nowPlaying.update(requireContext(), adapter as MutableObjectAdapter<Row>)
+		@Suppress("UNCHECKED_CAST")
+		(adapter as MutableObjectAdapter<Row>).let { mutableAdapter ->
+    nowPlaying.update(requireContext(), mutableAdapter)
+}
 	}
 
 	override fun onQueueStatusChanged(hasQueue: Boolean) {
 		if (activity == null || requireActivity().isFinishing) return
 
 		Timber.i("Updating audio queue in HomeFragment (onQueueStatusChanged)")
-		nowPlaying.update(requireContext(), adapter as MutableObjectAdapter<Row>)
+		@Suppress("UNCHECKED_CAST")
+		(adapter as MutableObjectAdapter<Row>).let { mutableAdapter ->
+    nowPlaying.update(requireContext(), mutableAdapter)
+}
 	}
 
 	private fun refreshRows(force: Boolean = false, delayed: Boolean = true) {
-		lifecycleScope.launch(Dispatchers.IO) {
+		lifecycleScope.launch(Dispatchers.Main) {
 			if (delayed) delay(1.5.seconds)
 
-			repeat(adapter.size()) { i ->
-				val rowAdapter = (adapter[i] as? ListRow)?.adapter as? ItemRowAdapter
-				if (force) rowAdapter?.Retrieve()
-				else rowAdapter?.ReRetrieveIfNeeded()
+			try {
+				val size = adapter.size()
+				repeat(size) { i ->
+					val row = adapter[i] as? ListRow ?: return@repeat
+					val rowAdapter = row.adapter as? ItemRowAdapter ?: return@repeat
+
+					// small delay between row refreshes to prevent UI freezing
+					if (i > 0) delay(90)
+
+					try {
+						if (force) {
+							rowAdapter.Retrieve()
+						} else {
+							rowAdapter.ReRetrieveIfNeeded()
+						}
+					} catch (e: Exception) {
+						Timber.e(e, "Error refreshing row at position $i")
+					}
+				}
+			} catch (e: Exception) {
+				Timber.e(e, "Error during refreshRows")
 			}
 		}
 	}
@@ -236,11 +316,18 @@ class HomeRowsFragment : RowsSupportFragment(), AudioEventListener, View.OnKeyLi
 		adapter.refreshItem(api, this, item)
 	}
 
-	override fun onDestroy() {
-		super.onDestroy()
+	override fun onDestroyView() {
+        // Clear references to views to prevent leaks
+        titleView = null
+        infoRowView = null
+        summaryView = null
+        super.onDestroyView()
+    }
 
-		mediaManager.removeAudioEventListener(this)
-	}
+    override fun onDestroy() {
+        super.onDestroy()
+        mediaManager.removeAudioEventListener(this)
+    }
 
 	private inner class ItemViewClickedListener : OnItemViewClickedListener {
 		override fun onItemClicked(
@@ -259,32 +346,144 @@ class HomeRowsFragment : RowsSupportFragment(), AudioEventListener, View.OnKeyLi
 			}
 
 			if (item !is BaseRowItem) return
-			if (row !is ListRow) return
-			@Suppress("UNCHECKED_CAST")
-			itemLauncher.launch(item, row.adapter as MutableObjectAdapter<Any>, requireContext())
+			itemLauncher.launch(item, (row as ListRow).adapter as ItemRowAdapter, requireContext())
 		}
 	}
 
-	private inner class ItemViewSelectedListener : OnItemViewSelectedListener {
-		override fun onItemSelected(
-			itemViewHolder: Presenter.ViewHolder?,
-			item: Any?,
-			rowViewHolder: RowPresenter.ViewHolder?,
-			row: Row?,
-		) {
-			if (item !is BaseRowItem) {
-				currentItem = null
-				//fill in default background
-				backgroundService.clearBackgrounds()
-			} else {
-				currentItem = item
-				currentRow = row as ListRow
+	private var titleView: android.widget.TextView? = null
+    private var infoRowView: android.widget.LinearLayout? = null
+    private var summaryView: android.widget.TextView? = null
+    private var logoView: org.jellyfin.androidtv.ui.AsyncImageView? = null
 
-				val itemRowAdapter = row.adapter as? ItemRowAdapter
-				itemRowAdapter?.loadMoreItemsIfNeeded(itemRowAdapter.indexOf(item))
+    private fun ensureViewsInitialized() {
+        // Always reinitialize the views when this is called
+        activity?.let { activity ->
+            titleView = activity.findViewById<android.widget.TextView>(R.id.title)
+            infoRowView = activity.findViewById<android.widget.LinearLayout>(R.id.infoRow)
+            summaryView = activity.findViewById<android.widget.TextView>(R.id.summary)
+            logoView = activity.findViewById<org.jellyfin.androidtv.ui.AsyncImageView>(R.id.logo)
 
-				backgroundService.setBackground(item.baseItem)
-			}
-		}
-	}
+            // If we have a current item, update the views with its data
+            currentItem?.let { item ->
+                updateLogoAndTitle(item)
+                summaryView?.setText(item.getSummary(requireContext()) ?: "")
+                infoRowView?.removeAllViews()
+                infoRowView?.let { view ->
+                    org.jellyfin.androidtv.util.InfoLayoutHelper.addInfoRow(requireContext(), item.baseItem, view, true)
+                }
+            } ?: run {
+                // Clear the views if there's no current item
+                clearInfoPanel()
+            }
+        }
+    }
+
+    private fun updateLogoAndTitle(item: BaseRowItem) {
+        val baseItem = item.baseItem
+        val api: ApiClient by inject()
+        val imageHelper: org.jellyfin.androidtv.util.ImageHelper by inject()
+        val itemLogo = baseItem?.itemImages?.get(org.jellyfin.sdk.model.api.ImageType.LOGO)
+        val parentLogo = baseItem?.parentImages?.get(org.jellyfin.sdk.model.api.ImageType.LOGO)
+        val logoUrl = itemLogo?.getUrl(api) ?: parentLogo?.getUrl(api)
+
+        if (logoUrl != null) {
+            // Show logo, hide title
+            logoView?.visibility = android.view.View.VISIBLE
+            titleView?.visibility = android.view.View.GONE
+
+            logoView?.load(
+                url = logoUrl,
+                aspectRatio = 0.1
+            )
+        } else {
+            // Hide logo, show title
+            logoView?.visibility = android.view.View.GONE
+            titleView?.visibility = android.view.View.VISIBLE
+            titleView?.setText(item.getName(requireContext()))
+        }
+    }
+
+
+    private fun clearInfoPanel(forceClear: Boolean = false) {
+        titleView?.setText("")
+        logoView?.visibility = android.view.View.GONE
+        titleView?.visibility = android.view.View.VISIBLE
+        infoRowView?.removeAllViews()
+        summaryView?.setText("")
+
+        // Only clear backgrounds if we're not on a Media Folders item or if forced
+        if (forceClear || currentItem == null || !homeFragmentViewsRow.isMediaFoldersItem(currentItem)) {
+            backgroundService.clearBackgrounds()
+        }
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        ensureViewsInitialized()
+
+        // Initialize any additional views here
+        initializeViews()
+    }
+
+    private fun initializeViews() {
+        // Any additional view initialization can go here
+    }
+
+private val homeFragmentViewsRow = HomeFragmentViewsRow(small = false)
+
+private inner class ItemViewSelectedListener : OnItemViewSelectedListener {
+    override fun onItemSelected(
+        itemViewHolder: Presenter.ViewHolder?,
+        item: Any?,
+        rowViewHolder: RowPresenter.ViewHolder?,
+        row: Row?,
+    ) {
+        ensureViewsInitialized()
+
+        // Check if the item is from the Media Folders row or has the media_folders_item tag
+        val isMediaFolderItem = homeFragmentViewsRow.isMediaFoldersItem(item) ||
+                              (item is BaseRowItem && itemViewHolder?.view?.tag == "media_folders_item")
+
+        if (isMediaFolderItem) {
+            // For Media Folders items, clear the info panel but keep the background
+            titleView?.setText("")
+            logoView?.visibility = android.view.View.GONE
+            titleView?.visibility = android.view.View.VISIBLE
+            infoRowView?.removeAllViews()
+            summaryView?.setText("")
+
+            // Set the background using the Media Folder's primary image
+            if (item is BaseRowItem) {
+                currentItem = item
+                currentRow = row as? ListRow
+                backgroundService.setBackground(item.baseItem)
+            }
+            return
+        }
+
+        if (item !is BaseRowItem) {
+            currentItem = null
+            // Clear info panel and background
+            clearInfoPanel(true)
+        } else {
+            currentItem = item
+            currentRow = row as? ListRow
+
+            // Safely cast row to ListRow and get its adapter
+            (row as? ListRow)?.let { listRow ->
+                val itemRowAdapter = listRow.adapter as? ItemRowAdapter
+                itemRowAdapter?.loadMoreItemsIfNeeded(itemRowAdapter.indexOf(item))
+            }
+
+            updateLogoAndTitle(item)
+            summaryView?.setText(item.getSummary(requireContext()) ?: "")
+            infoRowView?.removeAllViews()
+            infoRowView?.let { view ->
+                org.jellyfin.androidtv.util.InfoLayoutHelper.addInfoRow(requireContext(), item.baseItem, view, true)
+            }
+
+            backgroundService.setBackground(item.baseItem)
+        }
+    }
+}
 }

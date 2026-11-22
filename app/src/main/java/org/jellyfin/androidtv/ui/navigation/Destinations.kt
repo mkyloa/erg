@@ -110,6 +110,12 @@ object Destinations {
 
 	// Live TV
 	val liveTvGuide = fragmentDestination<LiveTvGuideFragment>()
+
+	// DUNE: favorites browser
+	val favorites = fragmentDestination<org.jellyfin.androidtv.ui.browsing.FavoritesFragment>()
+
+	// Seerr: discover and request
+	val seerrDiscover = fragmentDestination<org.jellyfin.androidtv.seerr.ui.SeerrDiscoverFragment>()
 	val liveTvSchedule = fragmentDestination<BrowseScheduleFragment>()
 	val liveTvRecordings = fragmentDestination<BrowseRecordingsFragment>()
 	val liveTvSeriesRecordings = fragmentDestination<BrowseViewFragment> {

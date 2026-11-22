@@ -168,8 +168,13 @@ val appModule = module {
 	viewModel { DreamViewModel(get(), get(), get(), get(), get()) }
 	viewModel { SettingsViewModel() }
 	viewModel { SettingsLibrariesScreenViewModel(get()) }
+	viewModel { org.jellyfin.androidtv.ui.home.carousel.CarouselViewModel(get(), get(), get()) }
+	viewModel { org.jellyfin.androidtv.seerr.ui.SeerrDiscoverViewModel(get()) }
 
 	single { BackgroundService(get(), get(), get(), get(), get()) }
+
+	// Seerr (request integration)
+	single { org.jellyfin.androidtv.seerr.SeerrClient(androidContext(), get()) }
 
 	single { MarkdownRenderer(get()) }
 	single { ItemLauncher() }

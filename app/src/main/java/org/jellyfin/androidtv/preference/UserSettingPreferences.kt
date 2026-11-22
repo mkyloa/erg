@@ -1,7 +1,9 @@
 package org.jellyfin.androidtv.preference
 
+import org.jellyfin.androidtv.constant.GenreRowType
 import org.jellyfin.androidtv.constant.HomeSectionType
 import org.jellyfin.androidtv.preference.store.DisplayPreferencesStore
+import org.jellyfin.preference.booleanPreference
 import org.jellyfin.preference.enumPreference
 import org.jellyfin.preference.intPreference
 import org.jellyfin.sdk.api.client.ApiClient
@@ -28,6 +30,31 @@ class UserSettingPreferences(
 		val homesection8 = enumPreference("homesection8", HomeSectionType.NONE)
 		val homesection9 = enumPreference("homesection9", HomeSectionType.NONE)
 	}
+
+	// DUNE additions (instance members so existing DUNE call sites keep working)
+	val genrerow0 = enumPreference("genrerow0", GenreRowType.SUGGESTED_MOVIES)
+	val genrerow1 = enumPreference("genrerow1", GenreRowType.COLLECTIONS)
+	val genrerow2 = enumPreference("genrerow2", GenreRowType.DISCOVER_MOVIES)
+	val genrerow3 = enumPreference("genrerow3", GenreRowType.DISCOVER_SERIES)
+	val genrerow4 = enumPreference("genrerow4", GenreRowType.RECENTLY_RELEASED)
+	val genrerow5 = enumPreference("genrerow5", GenreRowType.WATCH_IT_AGAIN)
+	val genrerow6 = enumPreference("genrerow6", GenreRowType.MUSIC)
+	val genrerow7 = enumPreference("genrerow7", GenreRowType.NONE)
+	val genrerow8 = enumPreference("genrerow8", GenreRowType.NONE)
+	val genrerow9 = enumPreference("genrerow9", GenreRowType.NONE)
+
+	val themeSongsEnabled = booleanPreference("themesongsEnabled", false)
+	val themesongvolume = intPreference("themesongsVolume", 10)
+	val themeSongsMovies = booleanPreference("themeSongsMovies", true)
+	val themeSongsSeries = booleanPreference("themeSongsSeries", true)
+	val themeSongsEpisodes = booleanPreference("themeSongsEpisodes", false)
+	val themeSongsArchiveFallback = booleanPreference("themeSongsArchiveFallback", true)
+
+	val useExtraSmallMediaFolders = booleanPreference("useExtraSmallMediaFolders", true)
+	val showLiveTvButton = booleanPreference("show_live_tv_button", false)
+	val showRandomButton = booleanPreference("show_masks_button", true)
+	val useClassicHomeScreen = booleanPreference("use_classic_home_screen", false)
+	val showMusicVideosRow = booleanPreference("show_music_videos_row", false)
 
 	val homesections = listOf(
 		homesection0,

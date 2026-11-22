@@ -115,6 +115,7 @@ object Routes {
 	const val PLAYBACK_BITSTREAM_AUDIO = "/playback/codec/bitstream-audio/{format}"
 	const val PLAYBACK_AVC_LEVEL = "/playback/codec/avc-level"
 	const val PLAYBACK_HEVC_LEVEL = "/playback/codec/hevc-level"
+	const val SEERR = "/seerr"
 	const val TELEMETRY = "/telemetry"
 	const val DEVELOPER = "/developer"
 	const val ABOUT = "/about"
@@ -123,6 +124,9 @@ object Routes {
 }
 
 val routes = mapOf<String, RouteComposable>(
+	Routes.SEERR to {
+		org.jellyfin.androidtv.ui.settings.screen.seerr.SettingsSeerrScreen()
+	},
 	Routes.MAIN to {
 		SettingsMainScreen()
 	},

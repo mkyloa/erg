@@ -4,9 +4,13 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -14,6 +18,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -44,13 +50,24 @@ fun SplashScreen() {
 			.fillMaxSize(),
 		contentAlignment = Alignment.Center,
 	) {
-		Image(
-			painter = painterResource(R.drawable.app_logo),
-			contentDescription = stringResource(R.string.app_name),
-			modifier = Modifier
-				.width(400.dp)
-				.fillMaxHeight(),
-		)
+		Column(
+			horizontalAlignment = Alignment.CenterHorizontally,
+			verticalArrangement = Arrangement.Center,
+			modifier = Modifier.fillMaxSize(),
+		) {
+			Box(
+				modifier = Modifier
+					.size(700.dp)
+					.padding(32.dp)
+			) {
+				Image(
+					painter = painterResource(R.drawable.app_logo),
+					contentDescription = stringResource(R.string.app_name),
+					modifier = Modifier.fillMaxSize(),
+					contentScale = ContentScale.Fit
+				)
+			}
+		}
 	}
 }
 
