@@ -173,6 +173,9 @@ val appModule = module {
 
 	single { BackgroundService(get(), get(), get(), get(), get()) }
 
+	// In-app updates from GitHub releases
+	single { org.jellyfin.androidtv.update.ErgUpdater(androidContext()) }
+
 	// Per-series audio/subtitle memory
 	single { org.jellyfin.androidtv.ui.playback.TrackMemory(androidContext(), get()) }
 

@@ -73,6 +73,7 @@ class MainActivity : FragmentActivity() {
 					)
 					InAppScreensaver()
 					MainActivitySettings()
+					org.jellyfin.androidtv.update.ErgUpdatePrompt()
 				}
 			}
 		}

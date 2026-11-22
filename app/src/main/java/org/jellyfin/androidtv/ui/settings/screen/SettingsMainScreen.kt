@@ -86,6 +86,15 @@ fun SettingsMainScreen() {
 
 		item {
 			ListButton(
+				leadingContent = { Icon(painterResource(R.drawable.ic_update), contentDescription = null) },
+				headingContent = { Text(stringResource(R.string.erg_updates)) },
+				onClick = { router.push(Routes.UPDATES) },
+				modifier = Modifier.focusKey(Routes.UPDATES),
+			)
+		}
+
+		item {
+			ListButton(
 				leadingContent = { Icon(painterResource(R.drawable.ic_jellyfin), contentDescription = null) },
 				headingContent = { Text(stringResource(R.string.pref_about_title)) },
 				onClick = { router.push(Routes.ABOUT) },

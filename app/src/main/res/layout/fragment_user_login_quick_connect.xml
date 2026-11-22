@@ -45,6 +45,25 @@
         android:privateImeOptions="horizontalAlignment=center"
         android:textDirection="ltr" />
 
+    <!-- Erg: scan to open the server's Quick Connect page with the code filled in -->
+    <ImageView
+        android:id="@+id/quick_connect_qr"
+        android:layout_width="180dp"
+        android:layout_height="180dp"
+        android:layout_marginTop="16dp"
+        android:contentDescription="@string/erg_qr_sign_in"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/quick_connect_qr_hint"
+        style="@style/TextAppearance.AppCompat.Caption"
+        android:layout_width="400dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="@string/erg_qr_sign_in_hint"
+        android:textAlignment="center"
+        android:visibility="gone" />
+
     <ProgressBar
         android:id="@+id/loading"
         style="@style/Widget.AppCompat.ProgressBar.Horizontal"

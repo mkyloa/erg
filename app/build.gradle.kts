@@ -16,6 +16,9 @@ android {
 		// Release version
 		applicationId = "dev.erg.tv"
 
+		// GitHub repository the in-app updater reads releases from
+		buildConfigField("String", "UPDATE_REPOSITORY", "\"mkyloa/erg\"")
+
 		// Android TV devices are ARM; skipping x86 keeps the APK much smaller (libmpv is large)
 		ndk {
 			abiFilters += listOf("arm64-v8a", "armeabi-v7a")
@@ -172,6 +175,9 @@ dependencies {
 
 	// MPV player engine (libmpv for Android, GPL-3.0-or-later)
 	implementation(libs.libmpv)
+
+	// QR codes for Quick Connect sign-in
+	implementation(libs.zxing.core)
 	implementation(libs.accompanist.permissions)
 
 	// Dependency Injection

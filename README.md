@@ -23,6 +23,9 @@ Starting from upstream rather than from DUNE means Erg keeps the official app's 
 - DUNE's eight themes, dynamic backdrop colors, theme songs
 - Restyled detail pages, search, login and user picker, playback overlay
 - Extra home rows: Because you watched, Collections, Discover, Recently released, Watch it again, Music videos
+- Pin any collection, playlist, genre or studio to the home screen (**Settings → Home → Pinned rows**)
+- Gruvbox Dark theme (default), plus DUNE's themes
+- Sign in by scanning a QR code: it opens your server's Quick Connect page with the code filled in
 
 **Seerr requests**
 - **Discover** in the home toolbar: trending, popular and upcoming movies and shows, plus search
@@ -41,7 +44,7 @@ Starting from upstream rather than from DUNE means Erg keeps the official app's 
 
 Erg installs alongside the official Jellyfin app and DUNE (package `dev.erg.tv`).
 
-Download the APK from the latest CI run (Actions → *App / Build* → artifacts), or build it yourself, then sideload it:
+Download `erg-vX.Y.Z.apk` from [Releases](https://github.com/mkyloa/erg/releases), or build it yourself, then sideload it:
 
 ```sh
 adb connect <tv-ip>
@@ -49,6 +52,8 @@ adb install erg-*.apk
 ```
 
 Seerr is optional: set it up in **Settings → Seerr**.
+
+Release builds check this repository's releases and offer updates (**Settings → Updates**). Android asks once to allow Erg to install apps, and confirms each update.
 
 ## Building
 
@@ -58,6 +63,16 @@ Requirements: JDK 21 and the Android SDK (platform 37).
 ./gradlew assembleDebug        # app/build/outputs/apk/debug/
 ./gradlew testDebugUnitTest
 ```
+
+## Releasing
+
+Push a version tag and CI builds a signed APK and publishes a GitHub release:
+
+```sh
+git tag v1.0.0 && git push origin v1.0.0
+```
+
+The signing key lives outside the repo in `~/.config/erg/` and as Actions secrets (`KEYSTORE`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`). Keep a backup: without it, updates can't install over existing installs. To build a signed APK locally: `tools/release-local.sh 1.0.0`.
 
 ## Keeping up with upstream
 

@@ -57,6 +57,7 @@ class UserLoginQuickConnectFragment : Fragment() {
 						is PendingQuickConnectState -> {
 							binding.quickConnectCode.text = state.code.formatCode()
 							binding.loading.isVisible = false
+							showQrCode(state.code)
 						}
 
 						UnavailableQuickConnectState,
@@ -88,6 +89,17 @@ class UserLoginQuickConnectFragment : Fragment() {
 				}.launchIn(this)
 			}
 		}
+	}
+
+	/** Erg: QR code linking to the server's Quick Connect page with [code] pre-filled. */
+	private fun showQrCode(code: String) {
+		val address = userLoginViewModel.server.value?.address ?: return
+		val size = (180 * resources.displayMetrics.density).toInt()
+		val qr = runCatching { org.jellyfin.androidtv.util.QrCode.bitmap(org.jellyfin.androidtv.util.QrCode.quickConnectUrl(address, code), size) }
+			.getOrNull() ?: return
+		binding.quickConnectQr.setImageBitmap(qr)
+		binding.quickConnectQr.isVisible = true
+		binding.quickConnectQrHint.isVisible = true
 	}
 
 	override fun onDestroyView() {

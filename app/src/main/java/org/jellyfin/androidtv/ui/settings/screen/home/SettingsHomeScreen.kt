@@ -125,6 +125,18 @@ fun SettingsHomeScreen() {
 			)
 		}
 
+		item { ListSection(headingContent = { Text(stringResource(R.string.erg_pinned_rows)) }) }
+
+		item {
+			val count = org.jellyfin.androidtv.ui.home.PinnedRows.load(userSettingPreferences).size
+			ListButton(
+				headingContent = { Text(stringResource(R.string.erg_pinned_rows)) },
+				captionContent = { Text(if (count == 0) stringResource(R.string.erg_pinned_rows_caption) else stringResource(R.string.erg_pinned_rows_count, count)) },
+				onClick = { router.push(Routes.HOME_PINNED) },
+				modifier = Modifier.focusKey(Routes.HOME_PINNED),
+			)
+		}
+
 		item { ListSection(headingContent = { Text(stringResource(R.string.erg_curated_rows)) }) }
 
 		itemsIndexed(userSettingPreferences.genrerows) { index, row ->

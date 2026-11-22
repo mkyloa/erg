@@ -3,6 +3,7 @@ package org.jellyfin.androidtv.ui.settings.screen.seerr
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -12,6 +13,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -43,6 +45,7 @@ private sealed interface QuickConnectState {
 @Composable
 fun SettingsSeerrScreen() {
 	val seerr = koinInject<SeerrClient>()
+	val jellyfinAddress = koinInject<org.jellyfin.sdk.api.client.ApiClient>().baseUrl
 	val scope = rememberCoroutineScope()
 	val user by seerr.signedInUser.collectAsState()
 
@@ -161,11 +164,26 @@ fun SettingsSeerrScreen() {
 			}
 
 			when (val state = quickConnect) {
-				is QuickConnectState.Waiting -> item {
-					ListSection(
-						headingContent = { Text(stringResource(R.string.seerr_quick_connect_code, state.code), fontSize = 28.sp) },
-						captionContent = { Text(stringResource(R.string.seerr_quick_connect_waiting)) },
-					)
+				is QuickConnectState.Waiting -> {
+					item {
+						ListSection(
+							headingContent = { Text(stringResource(R.string.seerr_quick_connect_code, state.code), fontSize = 28.sp) },
+							captionContent = { Text(stringResource(R.string.seerr_quick_connect_waiting)) },
+						)
+					}
+					// Scan to open the Jellyfin server's Quick Connect page with the code filled in
+					jellyfinAddress?.let { address ->
+						item {
+							val qr = androidx.compose.runtime.remember(state.code) {
+								runCatching { org.jellyfin.androidtv.util.QrCode.bitmap(org.jellyfin.androidtv.util.QrCode.quickConnectUrl(address, state.code), 480) }.getOrNull()
+							}
+							if (qr != null) androidx.compose.foundation.Image(
+								bitmap = qr.asImageBitmap(),
+								contentDescription = stringResource(R.string.erg_qr_sign_in),
+								modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp).size(160.dp),
+							)
+						}
+					}
 				}
 
 				is QuickConnectState.Failed -> item {

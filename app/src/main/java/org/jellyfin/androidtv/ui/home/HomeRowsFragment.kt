@@ -161,6 +161,9 @@ class HomeRowsFragment : RowsSupportFragment(), AudioEventListener, View.OnKeyLi
 			val sectionLoadTime = System.currentTimeMillis() - startTime
 			Timber.d("Loaded ${rows.size} home sections in parallel in ${sectionLoadTime}ms")
 
+			// Erg: rows the user pinned (collections, playlists, genres, studios)
+			val pinned = PinnedRows.rows(requireContext(), userSettingPreferences, userRepository)
+
 			// Erg curated rows ("genre rows"), shown below the regular sections
 			val curated = curatedRows.build()
 
@@ -185,6 +188,10 @@ class HomeRowsFragment : RowsSupportFragment(), AudioEventListener, View.OnKeyLi
 					} catch (e: Exception) {
 						Timber.e(e, "Error adding row to adapter")
 					}
+				}
+				pinned.forEach { row ->
+					runCatching { row.addToRowsAdapter(requireContext(), cardPresenter, rowsAdapter) }
+						.onFailure { Timber.e(it, "Error adding pinned row") }
 				}
 				curated.forEach { row ->
 					runCatching { row.addToRowsAdapter(requireContext(), cardPresenter, rowsAdapter) }

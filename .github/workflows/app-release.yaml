@@ -1,0 +1,62 @@
+name: App / Release
+
+# Push a tag like v1.0.0 to build a signed APK and publish it as a GitHub release.
+# The in-app updater reads the latest release from this repository.
+on:
+  push:
+    tags:
+      - v*
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-26.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Java
+        uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
+        with:
+          distribution: temurin
+          java-version-file: .tools-versions
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+
+      - name: Set version from tag
+        run: echo "JELLYFIN_VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+
+      - name: Decode keystore
+        run: echo "${{ secrets.KEYSTORE }}" | base64 --decode > "$RUNNER_TEMP/erg-release.jks"
+
+      - name: Build signed release APK
+        env:
+          KEYSTORE_FILE: ${{ runner.temp }}/erg-release.jks
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          SIGNING_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: ./gradlew :app:assembleRelease
+
+      - name: Verify the APK is signed
+        run: |
+          APK=$(ls app/build/outputs/apk/release/erg-*-release.apk)
+          "$ANDROID_HOME"/build-tools/*/apksigner verify --print-certs "$APK" | head -3
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          APK=$(ls app/build/outputs/apk/release/erg-*-release.apk)
+          cp "$APK" "erg-${GITHUB_REF_NAME}.apk"
+          PRERELEASE=""
+          case "$GITHUB_REF_NAME" in *-*) PRERELEASE="--prerelease" ;; esac
+          gh release create "$GITHUB_REF_NAME" "erg-${GITHUB_REF_NAME}.apk" \
+            --title "Erg ${GITHUB_REF_NAME}" --generate-notes $PRERELEASE
+
+      - name: Remove keystore
+        if: always()
+        run: rm -f "$RUNNER_TEMP/erg-release.jks"

@@ -205,4 +205,11 @@ val ergSettingsRoutes = mapOf<String, org.jellyfin.androidtv.ui.navigation.Route
 	Routes.HOME_CAROUSEL_SORT to { SettingsHomeCarouselSortScreen() },
 	Routes.CUSTOMIZATION_THEME_SONGS to { SettingsThemeSongsScreen() },
 	Routes.PLAYBACK_PLAYER_ENGINE to { SettingsPlayerEngineScreen() },
+	Routes.HOME_PINNED to { SettingsHomePinnedScreen() },
+	Routes.UPDATES to { SettingsUpdatesScreen() },
+	Routes.HOME_PINNED_ROW to { context -> SettingsHomePinnedRowScreen(context.parameters["index"]?.toIntOrNull() ?: -1) },
+	Routes.HOME_PINNED_ADD to { context ->
+		val type = context.parameters["type"]?.let { name -> org.jellyfin.androidtv.ui.home.PinnedRowType.entries.firstOrNull { it.name == name } }
+		if (type != null) SettingsHomePinnedAddScreen(type)
+	},
 )

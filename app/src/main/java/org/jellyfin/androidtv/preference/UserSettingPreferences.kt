@@ -6,6 +6,7 @@ import org.jellyfin.androidtv.preference.store.DisplayPreferencesStore
 import org.jellyfin.preference.booleanPreference
 import org.jellyfin.preference.enumPreference
 import org.jellyfin.preference.intPreference
+import org.jellyfin.preference.stringPreference
 import org.jellyfin.sdk.api.client.ApiClient
 
 class UserSettingPreferences(
@@ -42,6 +43,9 @@ class UserSettingPreferences(
 	val genrerow7 = enumPreference("genrerow7", GenreRowType.NONE)
 	val genrerow8 = enumPreference("genrerow8", GenreRowType.NONE)
 	val genrerow9 = enumPreference("genrerow9", GenreRowType.NONE)
+	/** Rows pinned to the home screen (JSON, see PinnedRows) */
+	val pinnedRows = stringPreference("erg_pinned_rows", "")
+
 	val genrerows = listOf(genrerow0, genrerow1, genrerow2, genrerow3, genrerow4, genrerow5, genrerow6, genrerow7, genrerow8, genrerow9)
 
 	val themeSongsEnabled = booleanPreference("themesongsEnabled", false)
