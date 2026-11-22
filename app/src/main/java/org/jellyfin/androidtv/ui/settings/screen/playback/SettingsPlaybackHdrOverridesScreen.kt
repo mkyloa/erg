@@ -1,5 +1,7 @@
 package org.jellyfin.androidtv.ui.settings.screen.playback
 
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -43,6 +45,18 @@ fun SettingsPlaybackHdrOverridesScreen() {
 					)
 				},
 				modifier = Modifier.focusKey("hdr_overrides_${format.name}")
+			)
+		}
+
+		// Erg: Dolby Vision profile 7 base-layer fallback
+		item {
+			var fallback by org.jellyfin.androidtv.ui.settings.compat.rememberPreference(userPreferences, UserPreferences.doviProfile7Fallback)
+			ListButton(
+				headingContent = { Text(stringResource(R.string.erg_dovi_p7_fallback)) },
+				captionContent = { Text(stringResource(R.string.erg_dovi_p7_fallback_caption)) },
+				trailingContent = { org.jellyfin.androidtv.ui.base.form.Checkbox(checked = fallback) },
+				onClick = { fallback = !fallback },
+				modifier = Modifier.focusKey("erg_dovi_p7_fallback"),
 			)
 		}
 	}

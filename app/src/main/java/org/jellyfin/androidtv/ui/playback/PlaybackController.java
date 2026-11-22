@@ -63,6 +63,8 @@ public class PlaybackController implements PlaybackControllerNotifiable {
     private Lazy<PlaybackManager> playbackManager = inject(PlaybackManager.class);
     private Lazy<UserPreferences> userPreferences = inject(UserPreferences.class);
     private Lazy<VideoQueueManager> videoQueueManager = inject(VideoQueueManager.class);
+
+    private Lazy<TrackMemory> trackMemory = inject(TrackMemory.class);
     private Lazy<ApiClient> api = inject(ApiClient.class);
     private Lazy<DataRefreshService> dataRefreshService = inject(DataRefreshService.class);
     private Lazy<ReportingHelper> reportingHelper = inject(ReportingHelper.class);
@@ -643,9 +645,17 @@ public class PlaybackController implements PlaybackControllerNotifiable {
             return;
         }
 
-        // get subtitle info - prefer saved language preference over server default
+        // get subtitle info - prefer this series' remembered track, then the session's language, then the server default
+        TrackMemory.SubtitlePick rememberedSubtitle = trackMemory.getValue().preferredSubtitle(getCurrentlyPlayingItem(), response.getMediaSource().getMediaStreams());
         String lastSubtitleLanguage = videoQueueManager.getValue().getLastPlayedSubtitleLanguageIsoCode();
-        if (lastSubtitleLanguage != null) {
+        if (mCurrentOptions.getSubtitleStreamIndex() == null && rememberedSubtitle instanceof TrackMemory.SubtitlePick.Off) {
+            Timber.i("Subtitles off, as remembered for this series");
+            mCurrentOptions.setSubtitleStreamIndex(null);
+        } else if (mCurrentOptions.getSubtitleStreamIndex() == null && rememberedSubtitle instanceof TrackMemory.SubtitlePick.Track) {
+            int index = ((TrackMemory.SubtitlePick.Track) rememberedSubtitle).getIndex();
+            Timber.i("Using remembered subtitle track %d for this series", index);
+            mCurrentOptions.setSubtitleStreamIndex(index);
+        } else if (lastSubtitleLanguage != null) {
             if (lastSubtitleLanguage.isEmpty()) {
                 // User explicitly disabled subtitles
                 mCurrentOptions.setSubtitleStreamIndex(null);
@@ -779,7 +789,8 @@ public class PlaybackController implements PlaybackControllerNotifiable {
         if (mDefaultAudioIndex != -1)
             return;
 
-        Integer lastChosenLanguage = lastChosenLanguageAudioTrack(info.getMediaSource());
+        Integer remembered = trackMemory.getValue().preferredAudioIndex(getCurrentlyPlayingItem(), info.getMediaSource().getMediaStreams());
+        Integer lastChosenLanguage = remembered != null ? remembered : lastChosenLanguageAudioTrack(info.getMediaSource());
         Integer remoteDefault = info.getMediaSource().getDefaultAudioStreamIndex();
         Integer bestGuess = bestGuessAudioTrack(info.getMediaSource());
 

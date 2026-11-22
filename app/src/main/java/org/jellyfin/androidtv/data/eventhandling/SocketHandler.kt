@@ -19,6 +19,8 @@ import org.jellyfin.androidtv.ui.navigation.Destinations
 import org.jellyfin.androidtv.ui.navigation.NavigationRepository
 import org.jellyfin.androidtv.ui.playback.MediaManager
 import org.jellyfin.androidtv.ui.playback.PlaybackControllerContainer
+import org.jellyfin.androidtv.ui.playback.rememberAudioChoice
+import org.jellyfin.androidtv.ui.playback.rememberSubtitleChoice
 import org.jellyfin.androidtv.ui.playback.setSubtitleIndex
 import org.jellyfin.androidtv.util.PlaybackHelper
 import org.jellyfin.sdk.api.client.ApiClient
@@ -116,6 +118,7 @@ class SocketHandler(
 				val index = message["index"]?.toIntOrNull() ?: return@onEach
 
 				withContext(Dispatchers.Main) {
+					playbackControllerContainer.playbackController?.rememberSubtitleChoice(index)
 					playbackControllerContainer.playbackController?.setSubtitleIndex(index)
 				}
 			}
@@ -126,6 +129,7 @@ class SocketHandler(
 				val index = message["index"]?.toIntOrNull() ?: return@onEach
 
 				withContext(Dispatchers.Main) {
+					playbackControllerContainer.playbackController?.rememberAudioChoice(index)
 					playbackControllerContainer.playbackController?.switchAudioStream(index)
 				}
 			}

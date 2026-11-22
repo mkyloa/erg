@@ -173,6 +173,9 @@ val appModule = module {
 
 	single { BackgroundService(get(), get(), get(), get(), get()) }
 
+	// Per-series audio/subtitle memory
+	single { org.jellyfin.androidtv.ui.playback.TrackMemory(androidContext(), get()) }
+
 	// Seerr (request integration)
 	single { org.jellyfin.androidtv.seerr.SeerrClient(androidContext(), get()) }
 

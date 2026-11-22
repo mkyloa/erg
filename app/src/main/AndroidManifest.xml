@@ -3,6 +3,10 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:installLocation="auto">
 
+    <!-- libmpv needs Android 8.0; it is only used there (see MpvSupport) -->
+    <uses-sdk tools:overrideLibrary="dev.jdtech.mpv" />
+
+
     <!-- Android TV Integration -->
     <uses-permission android:name="com.android.providers.tv.permission.WRITE_EPG_DATA" />
 

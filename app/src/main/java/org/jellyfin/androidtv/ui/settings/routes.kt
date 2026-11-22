@@ -119,6 +119,7 @@ object Routes {
 	const val HOME_CURATED_ROW = "/home/curated/{index}"
 	const val HOME_CAROUSEL_SORT = "/home/carousel-sort"
 	const val CUSTOMIZATION_THEME_SONGS = "/customization/theme-songs"
+	const val PLAYBACK_PLAYER_ENGINE = "/playback/player-engine"
 	const val TELEMETRY = "/telemetry"
 	const val DEVELOPER = "/developer"
 	const val ABOUT = "/about"

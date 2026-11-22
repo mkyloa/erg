@@ -15,8 +15,20 @@ android {
 
 		// Release version
 		applicationId = "dev.erg.tv"
+
+		// Android TV devices are ARM; skipping x86 keeps the APK much smaller (libmpv is large)
+		ndk {
+			abiFilters += listOf("arm64-v8a", "armeabi-v7a")
+		}
 		versionName = project.getVersionName()
 		versionCode = getVersionCode(versionName!!)
+	}
+
+	packaging {
+		jniLibs {
+			// libmpv and libass both bundle the C++ runtime
+			pickFirsts += "lib/*/libc++_shared.so"
+		}
 	}
 
 	buildFeatures {
@@ -157,6 +169,9 @@ dependencies {
 	implementation(libs.androidx.compose.material3)
 	implementation(libs.androidx.tv.material)
 	implementation(libs.androidx.palette)
+
+	// MPV player engine (libmpv for Android, GPL-3.0-or-later)
+	implementation(libs.libmpv)
 	implementation(libs.accompanist.permissions)
 
 	// Dependency Injection

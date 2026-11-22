@@ -163,6 +163,40 @@ fun SettingsThemeSongsScreen() {
 	}
 }
 
+@Composable
+fun SettingsPlayerEngineScreen() {
+	val router = LocalRouter.current
+	val userPreferences = koinInject<UserPreferences>()
+	var engine by rememberPreference(userPreferences, UserPreferences.videoPlayerEngine)
+
+	SettingsColumn {
+		item {
+			ListSection(
+				overlineContent = { Text(stringResource(R.string.pref_playback).uppercase()) },
+				headingContent = { Text(stringResource(R.string.erg_player_engine)) },
+			)
+		}
+
+		items(org.jellyfin.androidtv.preference.constant.VideoPlayerEngine.entries) { entry ->
+			ListButton(
+				headingContent = { Text(stringResource(entry.nameRes)) },
+				captionContent = {
+					Text(stringResource(when (entry) {
+						org.jellyfin.androidtv.preference.constant.VideoPlayerEngine.EXOPLAYER -> R.string.erg_player_exoplayer_caption
+						org.jellyfin.androidtv.preference.constant.VideoPlayerEngine.MPV -> R.string.erg_player_mpv_caption
+					}))
+				},
+				trailingContent = { RadioButton(checked = engine == entry) },
+				onClick = {
+					engine = entry
+					router.back()
+				},
+				modifier = Modifier.focusKey("player_engine_${entry.name}", initialFocus = engine == entry),
+			)
+		}
+	}
+}
+
 /** Routes added by Erg; merged into the settings route map. */
 val ergSettingsRoutes = mapOf<String, org.jellyfin.androidtv.ui.navigation.RouteComposable>(
 	Routes.HOME_CURATED_ROW to { context ->
@@ -170,4 +204,5 @@ val ergSettingsRoutes = mapOf<String, org.jellyfin.androidtv.ui.navigation.Route
 	},
 	Routes.HOME_CAROUSEL_SORT to { SettingsHomeCarouselSortScreen() },
 	Routes.CUSTOMIZATION_THEME_SONGS to { SettingsThemeSongsScreen() },
+	Routes.PLAYBACK_PLAYER_ENGINE to { SettingsPlayerEngineScreen() },
 )

@@ -68,7 +68,7 @@ private val hlsFmp4AudioCodecs = arrayOf(
 	Codec.Audio.DTS,
 )
 
-private fun UserPreferences.getMaxBitrate(): Int {
+internal fun UserPreferences.getMaxBitrate(): Int {
 	var maxBitrate = this[UserPreferences.maxBitrate].toFloatOrNull()
 
 	// The value "0" was used in an older release, make sure we prevent that from being used to avoid video not playing
@@ -83,7 +83,7 @@ private fun UserPreferences.getHdrRangeTypesFor(mode: HdrOverrideMode): Set<Vide
 		.filter { this[it.preference] == mode }
 		.flatMapTo(mutableSetOf()) { it.videoRangeTypes }
 
-private fun UserPreferences.isBitstreamAudioEnabled(context: Context, format: BitstreamAudioFormat): Boolean =
+internal fun UserPreferences.isBitstreamAudioEnabled(context: Context, format: BitstreamAudioFormat): Boolean =
 	when (this[format.preference]) {
 		BitstreamAudioMode.AUTO -> isPassthroughAudioAvailable(context, format.mimeType)
 		BitstreamAudioMode.ENABLE -> true
@@ -94,7 +94,10 @@ fun createDeviceProfile(
 	context: Context,
 	userPreferences: UserPreferences,
 	serverVersion: ServerVersion,
-) = createDeviceProfile(
+) = if (org.jellyfin.androidtv.ui.playback.mpv.MpvSupport.isEnabled(userPreferences)) {
+	// mpv handles almost every format itself, so describe it rather than the device's decoders
+	createMpvDeviceProfile(maxBitrate = userPreferences.getMaxBitrate())
+} else createDeviceProfile(
 	mediaTest = MediaCodecCapabilitiesTest(userPreferences[UserPreferences.softwareCodecsEnabled]),
 	maxBitrate = userPreferences.getMaxBitrate(),
 	isAC3PrefEnabled = userPreferences.isBitstreamAudioEnabled(context, BitstreamAudioFormat.AC3),
@@ -108,6 +111,7 @@ fun createDeviceProfile(
 	userHEVCLevel = userPreferences[UserPreferences.userHEVCLevel].level,
 	forceEnabledHdr = userPreferences.getHdrRangeTypesFor(HdrOverrideMode.ENABLE),
 	forceDisabledHdr = userPreferences.getHdrRangeTypesFor(HdrOverrideMode.DISABLE),
+	doviProfile7Fallback = org.jellyfin.androidtv.ui.playback.dovi.DoviSupport.useProfile7Fallback(userPreferences),
 )
 
 fun createDeviceProfile(
@@ -123,7 +127,9 @@ fun createDeviceProfile(
 	userAVCLevel: Int?,
 	userHEVCLevel: Int?,
 	forceEnabledHdr: Set<VideoRangeType>,
-	forceDisabledHdr: Set<VideoRangeType>
+	forceDisabledHdr: Set<VideoRangeType>,
+	// Erg: profile 7 plays as HDR10 base layer, so it can be direct played
+	doviProfile7Fallback: Boolean = false,
 ) = buildDeviceProfile {
 	val allowedAudioCodecs = when {
 		downMixAudio -> downmixSupportedAudioCodecs
@@ -481,12 +487,13 @@ fun createDeviceProfile(
 		add(VideoRangeType.DOVI_INVALID)
 
 		if (!supportsHevcDolbyVisionEL) {
-			if (
+			// Erg: with the base-layer fallback, profile 7 direct plays as HDR10
+			if (!doviProfile7Fallback && (
 				!KnownDefects.unreportedDoviProfile7Support ||
 				!supportsHevcDolbyVision ||
 				!supportsHevcMain10 ||
 				!supportsHevcHDR10
-			) {
+			)) {
 				add(VideoRangeType.DOVI_WITH_EL)
 
 				if (!supportsHevcHDR10Plus && !KnownDefects.hevcDoviHdr10PlusBug) {

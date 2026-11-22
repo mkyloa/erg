@@ -65,6 +65,18 @@ fun SettingsPlaybackScreen() {
 			)
 		}
 
+
+		// Erg: choose the engine for the built-in player (mpv needs Android 8.0+)
+		if (org.jellyfin.androidtv.ui.playback.mpv.MpvSupport.isSupported) item {
+			val engine by org.jellyfin.androidtv.ui.settings.compat.rememberPreference(userPreferences, UserPreferences.videoPlayerEngine)
+			ListButton(
+				leadingContent = { Icon(painterResource(R.drawable.ic_tv_play), contentDescription = null) },
+				headingContent = { Text(stringResource(R.string.erg_player_engine)) },
+				captionContent = { Text(stringResource(engine.nameRes)) },
+				onClick = { router.push(Routes.PLAYBACK_PLAYER_ENGINE) },
+				modifier = Modifier.focusKey(Routes.PLAYBACK_PLAYER_ENGINE),
+			)
+		}
 		item {
 			ListButton(
 				leadingContent = { Icon(painterResource(R.drawable.ic_photo), contentDescription = null) },

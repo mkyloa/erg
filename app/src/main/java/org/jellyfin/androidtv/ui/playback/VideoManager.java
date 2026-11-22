@@ -11,6 +11,7 @@ import android.net.Uri;
 import android.os.Handler;
 import android.util.TypedValue;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
 import androidx.annotation.NonNull;
@@ -51,6 +52,8 @@ import org.jellyfin.androidtv.data.compat.StreamInfo;
 import org.jellyfin.androidtv.preference.UserPreferences;
 import org.jellyfin.androidtv.preference.constant.BufferLength;
 import org.jellyfin.androidtv.preference.constant.ZoomMode;
+import org.jellyfin.androidtv.ui.playback.mpv.MpvPlayer;
+import org.jellyfin.androidtv.ui.playback.mpv.MpvSupport;
 import org.jellyfin.sdk.api.client.ApiClient;
 import org.jellyfin.sdk.model.api.MediaStream;
 import org.jellyfin.sdk.model.api.MediaStreamType;
@@ -82,6 +85,9 @@ public class VideoManager {
     private PlaybackOverlayFragmentHelper _helper;
     public ExoPlayer mExoPlayer;
     private PlayerView mExoPlayerView;
+    /** Set when the mpv engine is selected; ExoPlayer is then not created at all. */
+    @Nullable
+    private MpvPlayer mMpv;
     private Handler mHandler = new Handler();
 
     private long mMetaDuration = -1;
@@ -97,6 +103,10 @@ public class VideoManager {
         mActivity = activity;
         _helper = helper;
         nightModeEnabled = userPreferences.get(UserPreferences.Companion.getAudioNightMode());
+
+        mExoPlayerView = view.findViewById(R.id.exoPlayerView);
+        // Fall back to ExoPlayer if mpv can't start (e.g. the native library fails to load)
+        if (MpvSupport.isEnabled(userPreferences) && initMpv(activity)) return;
 
         boolean assDirectPlay = userPreferences.get(UserPreferences.Companion.getAssDirectPlay());
         AssHandler assHandler = assDirectPlay ? new AssHandler(AssRenderType.OVERLAY_OPEN_GL, new AssHandlerConfig()) : null;
@@ -117,7 +127,6 @@ public class VideoManager {
             });
         }
 
-        mExoPlayerView = view.findViewById(R.id.exoPlayerView);
         mExoPlayerView.setPlayer(mExoPlayer);
         int strokeColor = userPreferences.get(UserPreferences.Companion.getSubtitleTextStrokeColor()).intValue();
         int textWeight = userPreferences.get(UserPreferences.Companion.getSubtitlesTextWeight());
@@ -201,6 +210,90 @@ public class VideoManager {
         mPlaybackControllerNotifiable = notifier;
     }
 
+    /** Replaces the ExoPlayer view with an mpv surface and routes all calls to mpv. */
+    private boolean initMpv(@NonNull Activity activity) {
+        ApiClient api = KoinJavaComponent.get(ApiClient.class);
+        try {
+        mMpv = new MpvPlayer(activity, new MpvPlayer.Listener() {
+            @Override
+            public void onPrepared() {
+                if (mPlaybackControllerNotifiable != null) mPlaybackControllerNotifiable.onPrepared();
+            }
+
+            @Override
+            public void onPlayingChanged(boolean isPlaying) {
+                if (isPlaying) {
+                    if (mPlaybackControllerNotifiable != null) mPlaybackControllerNotifiable.onPrepared();
+                    startProgressLoop();
+                    _helper.setScreensaverLock(true);
+                } else {
+                    stopProgressLoop();
+                    _helper.setScreensaverLock(false);
+                }
+            }
+
+            @Override
+            public void onCompletion() {
+                stopProgressLoop();
+                if (mPlaybackControllerNotifiable != null) mPlaybackControllerNotifiable.onCompletion();
+            }
+
+            @Override
+            public void onError(@NonNull String message) {
+                Timber.e("mpv error: %s", message);
+                stopProgressLoop();
+                if (mPlaybackControllerNotifiable != null) mPlaybackControllerNotifiable.onError();
+            }
+
+            @Override
+            public void onSpeedChanged(float speed) {
+                if (mPlaybackControllerNotifiable != null) mPlaybackControllerNotifiable.onPlaybackSpeedChange(speed);
+            }
+        }, MpvSupport.createOptions(activity, userPreferences, api));
+        } catch (Throwable e) {
+            Timber.e(e, "Could not start mpv, falling back to ExoPlayer");
+            mMpv = null;
+            return false;
+        }
+
+        ViewGroup parent = (ViewGroup) mExoPlayerView.getParent();
+        mMpv.attachTo(parent, parent.indexOfChild(mExoPlayerView), new FrameLayout.LayoutParams((FrameLayout.LayoutParams) mExoPlayerView.getLayoutParams()));
+        mExoPlayerView.setVisibility(View.GONE);
+        return true;
+    }
+
+    /** True when video plays through mpv instead of ExoPlayer. */
+    public boolean isMpv() {
+        return mMpv != null;
+    }
+
+    /** The view showing the video, for resizing. */
+    private View getVideoView() {
+        return mMpv != null ? mMpv.getSurfaceView() : mExoPlayerView;
+    }
+
+    /** Selects a subtitle by Jellyfin media stream index (-1 disables). mpv only. */
+    public boolean selectMpvSubtitle(int index) {
+        return mMpv != null && mMpv.selectSubtitle(index);
+    }
+
+    /**
+     * Runs {@code callback} each time playback passes {@code positionMs}. Used for skipping intros
+     * and credits; works for both engines.
+     */
+    public void addPositionCallback(long positionMs, @NonNull Runnable callback) {
+        if (mMpv != null) {
+            mMpv.addPositionCallback(positionMs, callback);
+        } else if (mExoPlayer != null) {
+            mExoPlayer.createMessage((type, payload) -> callback.run())
+                    .setLooper(android.os.Looper.getMainLooper())
+                    // Positions at 0 are never reached by ExoPlayer, so nudge them forward
+                    .setPosition(Math.max(positionMs, 1))
+                    .setDeleteAfterDelivery(false)
+                    .send();
+        }
+    }
+
     private int determineExoPlayerExtensionRendererMode() {
         if (userPreferences.get(UserPreferences.Companion.getPreferExoPlayerFfmpeg())) {
             return DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER;
@@ -218,7 +311,9 @@ public class VideoManager {
      */
     private ExoPlayer.Builder configureExoplayerBuilder(Context context, AssHandler assHandler) {
         ExoPlayer.Builder exoPlayerBuilder = new ExoPlayer.Builder(context);
-        DefaultRenderersFactory defaultRendererFactory = new DefaultRenderersFactory(context);
+        // Erg: plays Dolby Vision profile 7 as its HDR10 base layer when the device can't decode it
+        boolean doviFallback = org.jellyfin.androidtv.ui.playback.dovi.DoviSupport.useProfile7Fallback(userPreferences);
+        DefaultRenderersFactory defaultRendererFactory = new org.jellyfin.androidtv.ui.playback.dovi.DoviFallbackRenderersFactory(context, doviFallback);
         defaultRendererFactory.setEnableDecoderFallback(true);
         defaultRendererFactory.setExtensionRendererMode(determineExoPlayerExtensionRendererMode());
 
@@ -273,7 +368,7 @@ public class VideoManager {
     }
 
     public boolean isInitialized() {
-        return mExoPlayer != null;
+        return mExoPlayer != null || mMpv != null;
     }
 
     public @NonNull ZoomMode getZoomMode() {
@@ -282,6 +377,10 @@ public class VideoManager {
 
     public void setZoom(@NonNull ZoomMode mode) {
         mZoomMode = mode;
+        if (mMpv != null) {
+            mMpv.setZoom(mode);
+            return;
+        }
         switch (mode) {
             case FIT:
                 mExoPlayerView.setResizeMode(AspectRatioFrameLayout.RESIZE_MODE_FIT);
@@ -300,6 +399,7 @@ public class VideoManager {
     }
 
     public long getDuration() {
+        if (mMpv != null) return mMpv.getCurrentDurationMs() > 0 ? mMpv.getCurrentDurationMs() : mMetaDuration;
         return isInitialized() && mExoPlayer.getDuration() > 0 ? mExoPlayer.getDuration() : mMetaDuration;
     }
 
@@ -307,7 +407,7 @@ public class VideoManager {
         if (!isInitialized())
             return -1;
 
-        long bufferedPosition = mExoPlayer.getBufferedPosition();
+        long bufferedPosition = mMpv != null ? mMpv.getBufferedPositionMs() : mExoPlayer.getBufferedPosition();
 
         if (bufferedPosition > -1 && bufferedPosition < getDuration()) {
             return bufferedPosition;
@@ -316,6 +416,7 @@ public class VideoManager {
     }
 
     public long getCurrentPosition() {
+        if (mMpv != null) return mMpv.getCurrentPositionMs();
         if (mExoPlayer == null || !isPlaying()) {
             return lastExoPlayerPosition == -1 ? 0 : lastExoPlayerPosition;
         } else {
@@ -326,10 +427,17 @@ public class VideoManager {
     }
 
     public boolean isPlaying() {
+        if (mMpv != null) return mMpv.isPlaying();
         return mExoPlayer.isPlaying();
     }
 
     public void start() {
+        if (mMpv != null) {
+            mMpv.play();
+            normalWidth = getVideoView().getLayoutParams().width;
+            normalHeight = getVideoView().getLayoutParams().height;
+            return;
+        }
         if (mExoPlayer == null) {
             Timber.e("mExoPlayer should not be null!!");
             _helper.getFragment().closePlayer();
@@ -341,14 +449,26 @@ public class VideoManager {
     }
 
     public void play() {
+        if (mMpv != null) {
+            mMpv.play();
+            return;
+        }
         mExoPlayer.setPlayWhenReady(true);
     }
 
     public void pause() {
+        if (mMpv != null) {
+            mMpv.pause();
+            return;
+        }
         mExoPlayer.setPlayWhenReady(false);
     }
 
     public void stopPlayback() {
+        if (mMpv != null) {
+            mMpv.stop();
+            mMpv.clearPositionCallbacks();
+        }
         if (mExoPlayer != null) {
             mExoPlayer.stop();
 
@@ -364,6 +484,8 @@ public class VideoManager {
     public boolean isSeekable() {
         if (!isInitialized())
             return false;
+        // mpv seeks within direct-played files and HLS transcodes alike
+        if (mMpv != null) return true;
 
         boolean canSeek = mExoPlayer.isCurrentMediaItemSeekable();
         Timber.d("current media item is%s seekable", canSeek ? "" : " not");
@@ -375,6 +497,10 @@ public class VideoManager {
             return -1;
 
         Timber.i("Exo length in seek is: %d", getDuration());
+        if (mMpv != null) {
+            mMpv.seekTo(pos);
+            return pos;
+        }
         mExoPlayer.seekTo(pos);
         return pos;
     }
@@ -393,6 +519,19 @@ public class VideoManager {
             return;
         }
         Timber.i("Video path set to: %s", path);
+
+        if (mMpv != null) {
+            List<MpvPlayer.ExternalSubtitle> externalSubtitles = new ArrayList<>();
+            for (MediaStream mediaStream : streamInfo.getMediaSource().getMediaStreams()) {
+                if (mediaStream.getType() != MediaStreamType.SUBTITLE) continue;
+                if (mediaStream.getDeliveryMethod() != SubtitleDeliveryMethod.EXTERNAL || mediaStream.getDeliveryUrl() == null) continue;
+                String url = api.createUrl(mediaStream.getDeliveryUrl(), Collections.emptyMap(), Collections.emptyMap(), true);
+                externalSubtitles.add(new MpvPlayer.ExternalSubtitle(mediaStream.getIndex(), url, mediaStream.getDisplayTitle(), mediaStream.getLanguage()));
+            }
+            // Track selection happens through the controller once the file is open
+            mMpv.load(path, 0, externalSubtitles, null, null);
+            return;
+        }
 
         try {
             // Add external subtitles
@@ -450,6 +589,11 @@ public class VideoManager {
     public int getExoPlayerTrack(@Nullable org.jellyfin.sdk.model.api.MediaStreamType streamType, @Nullable List<org.jellyfin.sdk.model.api.MediaStream> allStreams) {
         if (!isInitialized() || streamType == null || allStreams == null)
             return -1;
+        if (mMpv != null) {
+            if (streamType == org.jellyfin.sdk.model.api.MediaStreamType.AUDIO) return mMpv.selectedIndex("audio");
+            if (streamType == org.jellyfin.sdk.model.api.MediaStreamType.SUBTITLE) return mMpv.selectedIndex("sub");
+            return -1;
+        }
         if (streamType != org.jellyfin.sdk.model.api.MediaStreamType.SUBTITLE && streamType != org.jellyfin.sdk.model.api.MediaStreamType.AUDIO)
             return -1;
 
@@ -498,6 +642,9 @@ public class VideoManager {
     public boolean setExoPlayerTrack(int index, @Nullable org.jellyfin.sdk.model.api.MediaStreamType streamType, @Nullable List<org.jellyfin.sdk.model.api.MediaStream> allStreams) {
         if (!isInitialized() || allStreams == null || allStreams.isEmpty() || streamType != org.jellyfin.sdk.model.api.MediaStreamType.SUBTITLE && streamType != org.jellyfin.sdk.model.api.MediaStreamType.AUDIO)
             return false;
+        if (mMpv != null) {
+            return streamType == org.jellyfin.sdk.model.api.MediaStreamType.AUDIO ? mMpv.selectAudio(index) : mMpv.selectSubtitle(index);
+        }
 
         int chosenTrackType = streamType == org.jellyfin.sdk.model.api.MediaStreamType.SUBTITLE ? C.TRACK_TYPE_TEXT : C.TRACK_TYPE_AUDIO;
 
@@ -585,6 +732,8 @@ public class VideoManager {
     public float getPlaybackSpeed() {
         if (!isInitialized()) {
             return 1.0f;
+        } else if (mMpv != null) {
+            return mMpv.getPlaybackSpeed();
         } else {
             return mExoPlayer.getPlaybackParameters().speed;
         }
@@ -597,6 +746,10 @@ public class VideoManager {
         }
         Timber.d("Setting playback speed: %f", speed);
 
+        if (mMpv != null) {
+            mMpv.setSpeed(speed);
+            return;
+        }
         mExoPlayer.setPlaybackParameters(new PlaybackParameters(speed));
     }
 
@@ -608,6 +761,10 @@ public class VideoManager {
 
     private void releasePlayer() {
         _helper.setScreensaverLock(false);
+        if (mMpv != null) {
+            mMpv.release();
+            mMpv = null;
+        }
         if (mExoPlayer != null) {
             mExoPlayerView.setPlayer(null);
             mExoPlayer.release();
@@ -619,7 +776,7 @@ public class VideoManager {
     int normalHeight;
 
     public void contractVideo(int height) {
-        FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) mExoPlayerView.getLayoutParams();
+        FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) getVideoView().getLayoutParams();
         if (isContracted) return;
 
         int sw = mActivity.getWindow().getDecorView().getWidth();
@@ -630,15 +787,15 @@ public class VideoManager {
         lp.rightMargin = ((lp.width - normalWidth) / 2) - 110;
         lp.bottomMargin = ((lp.height - normalHeight) / 2) - 50;
 
-        mExoPlayerView.setLayoutParams(lp);
-        mExoPlayerView.invalidate();
+        getVideoView().setLayoutParams(lp);
+        getVideoView().invalidate();
 
         isContracted = true;
     }
 
     public void setVideoFullSize(boolean force) {
         if (normalHeight == 0) return;
-        FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) mExoPlayerView.getLayoutParams();
+        FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) getVideoView().getLayoutParams();
         if (force) {
             lp.height = -1;
             lp.width = -1;
@@ -649,8 +806,8 @@ public class VideoManager {
 
         lp.rightMargin = 0;
         lp.bottomMargin = 0;
-        mExoPlayerView.setLayoutParams(lp);
-        mExoPlayerView.invalidate();
+        getVideoView().setLayoutParams(lp);
+        getVideoView().invalidate();
 
         isContracted = false;
     }

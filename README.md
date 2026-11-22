@@ -29,6 +29,11 @@ Starting from upstream rather than from DUNE means Erg keeps the official app's 
 - Request movies, all seasons of a show, or pick seasons; titles you already have open straight in your library
 - Sign in with Jellyfin Quick Connect (approve a code on your phone) or username and password; each Jellyfin user on the TV gets their own Seerr session
 
+**Playback**
+- Choose the player in **Settings → Playback → Video player**: ExoPlayer (best for HDR and Dolby Vision) or **mpv**, which direct-plays almost any file with full ASS subtitle rendering (Android 8.0+)
+- Dolby Vision profile 7 (UHD Blu-ray rips) plays as HDR10 on devices that can't decode it, instead of transcoding
+- Audio and subtitle choices are remembered per series and per user, matched by language plus forced / SDH / commentary, so the next episode picks the same kind of track
+
 **Polish**
 - Crossfading carousel, animated focus states, and loading skeletons instead of spinners
 
@@ -73,3 +78,5 @@ git merge v0.21.0   # example
 ## License
 
 GPL-2.0, like the projects it builds on. See [LICENSE](LICENSE).
+
+The mpv engine uses [libmpv-android](https://github.com/jarnedemeulemeester/libmpv-android). Its wrapper code is MIT, but the published package (with the bundled mpv/FFmpeg binaries) declares GPL-3.0-or-later. Upstream does not say whether its GPL-2.0 is "only" or "or later", so resolve that (or switch to a compatibly licensed mpv build) before distributing Erg builds publicly.

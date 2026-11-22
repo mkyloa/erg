@@ -1214,4 +1214,11 @@
     <string name="erg_backdrop_dynamic_colors">Dynamic colors</string>
     <string name="erg_backdrop_dynamic_colors_caption">Tint the background with colors from the artwork</string>
     <string name="erg_percent">%1$d%%</string>
+    <string name="erg_player_engine">Video player</string>
+    <string name="erg_player_exoplayer">ExoPlayer</string>
+    <string name="erg_player_exoplayer_caption">Best for HDR and Dolby Vision. Some formats need server transcoding.</string>
+    <string name="erg_player_mpv">mpv</string>
+    <string name="erg_player_mpv_caption">Plays almost any file directly, with full ASS subtitles. HDR is shown as SDR.</string>
+    <string name="erg_dovi_p7_fallback">Play Dolby Vision profile 7 as HDR10</string>
+    <string name="erg_dovi_p7_fallback_caption">On devices that can\'t decode profile 7 (UHD Blu-ray rips), play its HDR10 base layer instead of transcoding</string>
 </resources>

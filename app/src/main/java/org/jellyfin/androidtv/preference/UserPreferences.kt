@@ -21,6 +21,7 @@ import org.jellyfin.androidtv.preference.constant.ScreensaverSortBy
 import org.jellyfin.androidtv.preference.constant.SkipDuration
 import org.jellyfin.androidtv.preference.constant.StillWatchingBehavior
 import org.jellyfin.androidtv.preference.constant.SubtitleLanguage
+import org.jellyfin.androidtv.preference.constant.VideoPlayerEngine
 import org.jellyfin.androidtv.preference.constant.WatchedIndicatorBehavior
 import org.jellyfin.androidtv.preference.constant.ZoomMode
 import org.jellyfin.androidtv.ui.playback.segment.MediaSegmentAction
@@ -449,6 +450,16 @@ class UserPreferences(context: Context) : SharedPreferenceStore(
 		 */
 		var genreItemLimit = intPreference("genre_item_limit", 10)
 
+
+		/**
+		 * Player used for video playback (Erg).
+		 */
+		var videoPlayerEngine = enumPreference("video_player_engine", VideoPlayerEngine.EXOPLAYER)
+
+		/**
+		 * Play Dolby Vision profile 7 as its HDR10 base layer on devices that can't decode it (Erg).
+		 */
+		var doviProfile7Fallback = booleanPreference("dovi_profile7_fallback", true)
 
 		/**
 		 * Enable still watching
