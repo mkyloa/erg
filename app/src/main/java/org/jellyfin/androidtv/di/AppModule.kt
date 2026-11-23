@@ -80,6 +80,7 @@ val appModule = module {
 	// SDK
 	single(defaultDeviceInfo) { androidDevice(get()) }
 	single { OkHttpFactory() }
+	single { org.jellyfin.androidtv.ui.itemdetail.ThemeSongs(androidContext()) }
 	single { HttpClientOptions() }
 	single {
 		createJellyfin {

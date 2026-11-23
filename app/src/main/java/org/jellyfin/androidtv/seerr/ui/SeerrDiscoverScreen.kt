@@ -143,12 +143,13 @@ private fun DiscoverContent(
 	LaunchedEffect(Unit) { runCatching { firstRowFocus.requestFocus() } }
 
 	LazyColumn(
-		contentPadding = PaddingValues(start = 48.dp, end = 48.dp, top = 27.dp, bottom = 48.dp),
+		// Rows run edge to edge so posters scroll off the screen instead of clipping at the inset
+		contentPadding = PaddingValues(top = 27.dp, bottom = 48.dp),
 		verticalArrangement = Arrangement.spacedBy(20.dp),
 		modifier = Modifier.fillMaxSize(),
 	) {
 		item(key = "header") {
-			Row(verticalAlignment = Alignment.CenterVertically) {
+			Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = ScreenInset)) {
 				Text(
 					stringResource(R.string.seerr_discover),
 					color = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onBackground,
@@ -170,14 +171,16 @@ private fun DiscoverContent(
 
 		if (searching && searchResults == null) {
 			item(key = "search-loading") {
-				org.jellyfin.androidtv.ui.composable.SkeletonPosterRow(cardWidth = PosterWidth, cardHeight = PosterHeight)
+				Box(Modifier.padding(horizontal = ScreenInset)) {
+					org.jellyfin.androidtv.ui.composable.SkeletonPosterRow(cardWidth = PosterWidth, cardHeight = PosterHeight)
+				}
 			}
 		}
 
 		if (searchResults != null) {
 			item(key = "search") {
 				if (searchResults.isEmpty()) {
-					Text(stringResource(R.string.seerr_no_results), color = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onBackground.copy(alpha = 0.7f))
+					Text(stringResource(R.string.seerr_no_results), color = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onBackground.copy(alpha = 0.7f), modifier = Modifier.padding(horizontal = ScreenInset))
 				} else {
 					PosterRow(
 						title = stringResource(R.string.seerr_row_search_results),
@@ -201,6 +204,9 @@ private fun DiscoverContent(
 	}
 }
 
+/** Left and right margin of the screen's content. */
+private val ScreenInset = 48.dp
+
 @Composable
 private fun PosterRow(
 	title: String,
@@ -209,10 +215,10 @@ private fun PosterRow(
 	firstItemFocus: FocusRequester? = null,
 ) {
 	Column {
-		Text(title, color = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onBackground, fontSize = 20.sp, modifier = Modifier.padding(bottom = 10.dp))
+		Text(title, color = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onBackground, fontSize = 20.sp, modifier = Modifier.padding(start = ScreenInset, bottom = 10.dp))
 		LazyRow(
 			horizontalArrangement = Arrangement.spacedBy(14.dp),
-			contentPadding = PaddingValues(vertical = 4.dp, horizontal = 2.dp),
+			contentPadding = PaddingValues(vertical = 4.dp, horizontal = ScreenInset),
 		) {
 			items(items, key = { "${it.mediaType}-${it.id}" }) { item ->
 				PosterCard(

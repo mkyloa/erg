@@ -6,6 +6,8 @@ import android.view.KeyEvent
 import android.view.View
 import android.view.WindowManager
 import androidx.activity.compose.setContent
+import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.Lifecycle
@@ -69,6 +71,9 @@ class MainActivity : FragmentActivity() {
 				) {
 					AppBackground()
 					AppNavigationHost(
+						// Without a size the host wraps its content, which squeezes screens laid out
+						// against the bottom edge (the home rows ended up behind the carousel)
+						modifier = Modifier.fillMaxSize(),
 						navigationRepository = navigationRepository,
 					)
 					InAppScreensaver()
