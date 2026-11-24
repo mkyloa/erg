@@ -52,18 +52,9 @@ class SeerrDiscoverViewModel(
 	private val _state = MutableStateFlow<SeerrDiscoverState>(SeerrDiscoverState.Loading)
 	val state: StateFlow<SeerrDiscoverState> = _state.asStateFlow()
 
-	private val _searchResults = MutableStateFlow<List<SeerrResult>?>(null)
-	/** null when no search is active. */
-	val searchResults: StateFlow<List<SeerrResult>?> = _searchResults.asStateFlow()
-
-	private val _searching = MutableStateFlow(false)
-	/** True while a search is debouncing or in flight. */
-	val searching: StateFlow<Boolean> = _searching.asStateFlow()
-
 	private val _detail = MutableStateFlow<SeerrDetailState?>(null)
 	val detail: StateFlow<SeerrDetailState?> = _detail.asStateFlow()
 
-	private var searchJob: Job? = null
 	private var detailJob: Job? = null
 
 	/** Called on screen start/resume: picks up settings changes and re-validates the session. */
@@ -106,28 +97,6 @@ class SeerrDiscoverViewModel(
 				_state.value = if (!seerr.hasSession) SeerrDiscoverState.NeedsSetup
 				else SeerrDiscoverState.Error(err.message ?: err.toString())
 			}
-		}
-	}
-
-	fun search(query: String) {
-		searchJob?.cancel()
-		if (query.isBlank()) {
-			_searching.value = false
-			_searchResults.value = null
-			return
-		}
-		_searching.value = true
-		// Drop stale results so the placeholder row shows for the new query
-		_searchResults.value = null
-		searchJob = viewModelScope.launch {
-			delay(400) // debounce typing
-			_searchResults.value = runCatching { seerr.search(query.trim()) }
-				.onFailure { Timber.w(it, "Seerr search failed") }
-				.getOrNull()
-				?.results
-				?.filter { it.mediaType != MEDIA_PERSON }
-				.orEmpty()
-			_searching.value = false
 		}
 	}
 
@@ -187,6 +156,5 @@ class SeerrDiscoverViewModel(
 			if (state is SeerrDiscoverState.Content) state.copy(rows = state.rows.map { it.copy(items = it.items.patch()) })
 			else state
 		}
-		_searchResults.update { it?.patch() }
 	}
 }

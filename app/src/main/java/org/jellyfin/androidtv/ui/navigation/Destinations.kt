@@ -116,8 +116,10 @@ object Destinations {
 
 	// Seerr: discover and request
 	val seerrDiscover = fragmentDestination<org.jellyfin.androidtv.seerr.ui.SeerrDiscoverFragment>()
-	fun seerrSearch(query: String) = fragmentDestination<org.jellyfin.androidtv.seerr.ui.SeerrDiscoverFragment> {
-		putString(org.jellyfin.androidtv.seerr.ui.SeerrDiscoverFragment.EXTRA_QUERY, query)
+	/** Opens a Seerr title page (from search); Back returns to where it was opened. */
+	fun seerrItem(id: Int, mediaType: String) = fragmentDestination<org.jellyfin.androidtv.seerr.ui.SeerrDiscoverFragment> {
+		putInt(org.jellyfin.androidtv.seerr.ui.SeerrDiscoverFragment.EXTRA_ITEM_ID, id)
+		putString(org.jellyfin.androidtv.seerr.ui.SeerrDiscoverFragment.EXTRA_ITEM_TYPE, mediaType)
 	}
 	val liveTvSchedule = fragmentDestination<BrowseScheduleFragment>()
 	val liveTvRecordings = fragmentDestination<BrowseRecordingsFragment>()

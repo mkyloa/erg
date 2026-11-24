@@ -6,6 +6,7 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.compose.content
 import org.jellyfin.androidtv.data.service.BackgroundService
+import org.jellyfin.androidtv.seerr.SeerrResult
 import org.jellyfin.androidtv.ui.base.JellyfinTheme
 import org.jellyfin.androidtv.ui.navigation.Destinations
 import org.jellyfin.androidtv.ui.navigation.NavigationRepository
@@ -20,8 +21,9 @@ import timber.log.Timber
 /** Browse and request titles from Seerr. */
 class SeerrDiscoverFragment : Fragment() {
 	companion object {
-		/** Opens Discover with this search already run (from the library search's "Search Seerr"). */
-		const val EXTRA_QUERY = "query"
+		/** Opens straight onto this title's page (from search); Back leaves Discover. */
+		const val EXTRA_ITEM_ID = "item_id"
+		const val EXTRA_ITEM_TYPE = "item_type"
 	}
 
 	private val viewModel: SeerrDiscoverViewModel by viewModel()
@@ -33,7 +35,11 @@ class SeerrDiscoverFragment : Fragment() {
 		JellyfinTheme {
 			SeerrDiscoverScreen(
 				viewModel = viewModel,
-				initialQuery = arguments?.getString(EXTRA_QUERY),
+				initialItem = arguments?.takeIf { it.containsKey(EXTRA_ITEM_ID) }?.let {
+					SeerrResult(id = it.getInt(EXTRA_ITEM_ID), mediaType = it.getString(EXTRA_ITEM_TYPE))
+				},
+				onCloseInitialItem = { navigationRepository.goBack() },
+				onOpenSearch = { navigationRepository.navigate(Destinations.search()) },
 				onOpenSettings = { settingsViewModel.show(Routes.SEERR) },
 				onOpenLibraryItem = { id ->
 					val uuid = id.toUUIDOrNull()

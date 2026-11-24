@@ -42,7 +42,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -54,6 +53,7 @@ import org.jellyfin.androidtv.seerr.seerrImageUrl
 import org.jellyfin.androidtv.ui.base.CircularProgressIndicator
 import org.jellyfin.androidtv.ui.base.Text
 import org.jellyfin.androidtv.ui.base.button.Button
+import org.jellyfin.androidtv.ui.base.Icon
 
 private val PosterWidth = 132.dp
 private val PosterHeight = 198.dp
@@ -61,15 +61,16 @@ private val PosterHeight = 198.dp
 @Composable
 fun SeerrDiscoverScreen(
 	viewModel: SeerrDiscoverViewModel,
-	initialQuery: String? = null,
+	initialItem: SeerrResult? = null,
+	onCloseInitialItem: () -> Unit = {},
+	onOpenSearch: () -> Unit,
 	onOpenSettings: () -> Unit,
 	onOpenLibraryItem: (String) -> Unit,
 ) {
-	LaunchedEffect(initialQuery) { initialQuery?.takeIf { it.isNotBlank() }?.let(viewModel::search) }
+	// Opened from search on one title: show its page; leaving it leaves Discover too
+	LaunchedEffect(initialItem) { initialItem?.let(viewModel::openDetail) }
 	val state by viewModel.state.collectAsState()
-	val searchResults by viewModel.searchResults.collectAsState()
 	val detail by viewModel.detail.collectAsState()
-	val searching by viewModel.searching.collectAsState()
 
 	Box(
 		Modifier
@@ -101,17 +102,14 @@ fun SeerrDiscoverScreen(
 
 			is SeerrDiscoverState.Content -> DiscoverContent(
 				rows = current.rows,
-				searchResults = searchResults,
-				searching = searching,
 				detailOpen = detail != null,
-				initialQuery = initialQuery,
-				onSearch = viewModel::search,
+				onOpenSearch = onOpenSearch,
 				onSelect = viewModel::openDetail,
 			)
 		}
 		}
 
-		if (detail != null) BackHandler { viewModel.closeDetail() }
+		if (detail != null) BackHandler { if (initialItem != null) onCloseInitialItem() else viewModel.closeDetail() }
 
 		// Keep the last detail state around while it fades out
 		var lastDetail by remember { mutableStateOf(detail) }
@@ -136,23 +134,11 @@ fun SeerrDiscoverScreen(
 @Composable
 private fun DiscoverContent(
 	rows: List<SeerrRow>,
-	searchResults: List<SeerrResult>?,
-	searching: Boolean,
 	detailOpen: Boolean,
-	initialQuery: String?,
-	onSearch: (String) -> Unit,
+	onOpenSearch: () -> Unit,
 	onSelect: (SeerrResult) -> Unit,
 ) {
-	var query by rememberSaveable { mutableStateOf(initialQuery.orEmpty()) }
 	val firstRowFocus = remember { FocusRequester() }
-	// Arriving with a query: jump to its first result once, then leave focus to the user
-	var focusedInitialResults by rememberSaveable { mutableStateOf(initialQuery.isNullOrBlank()) }
-	LaunchedEffect(searchResults) {
-		if (!focusedInitialResults && !detailOpen && !searchResults.isNullOrEmpty()) {
-			focusedInitialResults = true
-			runCatching { firstRowFocus.requestFocus() }
-		}
-	}
 	// The poster a title page was opened from, so Back lands on it again
 	var lastOpened by rememberSaveable { mutableStateOf<String?>(null) }
 	val returnFocus = remember { FocusRequester() }
@@ -178,40 +164,10 @@ private fun DiscoverContent(
 					fontWeight = FontWeight.Bold,
 					modifier = Modifier.padding(end = 24.dp),
 				)
-				SeerrTextField(
-					value = query,
-					onValueChange = { query = it; onSearch(it) },
-					placeholder = stringResource(R.string.seerr_search_hint),
-					icon = painterResource(R.drawable.ic_search),
-					imeAction = ImeAction.Search,
-					onSubmit = { onSearch(query) },
-					modifier = Modifier.width(420.dp),
-				)
-			}
-		}
-
-		if (searching && searchResults == null) {
-			item(key = "search-loading") {
-				Box(Modifier.padding(horizontal = ScreenInset)) {
-					org.jellyfin.androidtv.ui.composable.SkeletonPosterRow(cardWidth = PosterWidth, cardHeight = PosterHeight)
-				}
-			}
-		}
-
-		if (searchResults != null) {
-			item(key = "search") {
-				if (searchResults.isEmpty()) {
-					Text(stringResource(R.string.seerr_no_results), color = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onBackground.copy(alpha = 0.7f), modifier = Modifier.padding(horizontal = ScreenInset))
-				} else {
-					PosterRow(
-						rowKey = "search",
-						title = stringResource(R.string.seerr_row_search_results),
-						items = searchResults,
-						onSelect = select,
-						returnKey = lastOpened,
-						returnFocus = returnFocus,
-						firstItemFocus = firstRowFocus,
-					)
+				// Erg: one search for the library and Seerr; Discover is for browsing
+				Button(onClick = onOpenSearch) {
+					Icon(painterResource(R.drawable.ic_search), contentDescription = null, modifier = Modifier.size(18.dp))
+					Text(stringResource(R.string.seerr_search_hint), modifier = Modifier.padding(start = 8.dp))
 				}
 			}
 		}
@@ -225,7 +181,7 @@ private fun DiscoverContent(
 					onSelect = select,
 					returnKey = lastOpened,
 					returnFocus = returnFocus,
-					firstItemFocus = if (index == 0 && searchResults == null) firstRowFocus else null,
+					firstItemFocus = if (index == 0) firstRowFocus else null,
 				)
 			}
 		}
@@ -267,7 +223,7 @@ private fun PosterRow(
 }
 
 @Composable
-private fun PosterCard(
+internal fun PosterCard(
 	item: SeerrResult,
 	onClick: () -> Unit,
 	modifier: Modifier = Modifier,

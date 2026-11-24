@@ -87,12 +87,20 @@ fun SearchScreen(
 	val context = LocalContext.current
 	val searchResults by viewModel.searchResultsFlow.collectAsStateWithLifecycle()
 	val isSearching by viewModel.isSearching.collectAsStateWithLifecycle()
+	val seerrResults by viewModel.seerrResults.collectAsStateWithLifecycle()
+	val trending by viewModel.trending.collectAsStateWithLifecycle()
 
 	// Saveable so the query (and its results) are still there after visiting a result or Seerr
 	var query by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(initialQuery ?: "") }
 	// The result last opened, so Back lands on it instead of the search box and keyboard
 	var lastOpenedId by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf<String?>(null) }
 	val returnFocus = remember { FocusRequester() }
+	val navigation = org.koin.compose.koinInject<org.jellyfin.androidtv.ui.navigation.NavigationRepository>()
+	// Erg: Seerr titles open their Discover page; the key brings focus back to the poster afterwards
+	val openSeerr: (org.jellyfin.androidtv.seerr.SeerrResult) -> Unit = { item ->
+		lastOpenedId = seerrKey(item)
+		item.mediaType?.let { navigation.navigate(org.jellyfin.androidtv.ui.navigation.Destinations.seerrItem(item.id, it)) }
+	}
 	var isSearchFocused by remember { mutableStateOf(false) }
 	var isVoiceButtonFocused by remember { mutableStateOf(false) }
 	var isClearButtonFocused by remember { mutableStateOf(false) }
@@ -136,8 +144,18 @@ fun SearchScreen(
 		}
 	}
 
-	LaunchedEffect(searchResults) {
+	LaunchedEffect(searchResults, seerrResults, trending) {
 		val id = lastOpenedId ?: return@LaunchedEffect
+		if (id.startsWith(SEERR_KEY_PREFIX)) {
+			// A Seerr poster: its row may arrive after the library results
+			val shown = if (query.isBlank()) trending else seerrResults
+			if (shown.any { seerrKey(it) == id }) {
+				delay(100)
+				runCatching { returnFocus.requestFocus() }.onFailure { searchFieldFocusRequester.requestFocus() }
+				lastOpenedId = null
+			}
+			return@LaunchedEffect
+		}
 		if (searchResults.any { group -> group.items.any { it.id.toString() == id } }) {
 			delay(100)
 			runCatching { returnFocus.requestFocus() }.onFailure { searchFieldFocusRequester.requestFocus() }
@@ -249,12 +267,14 @@ fun SearchScreen(
 		}
 
 		AnimatedVisibility(
-			visible = searchResults.isNotEmpty(),
+			visible = query.isNotBlank() && (searchResults.isNotEmpty() || seerrResults.isNotEmpty()),
 			enter = fadeIn(),
 			exit = fadeOut()
 		) {
 			SearchResultsList(
 				results = searchResults.toList(),
+				seerrResults = seerrResults,
+				onSeerrClicked = openSeerr,
 				onItemClicked = { item ->
 					lastOpenedId = item.itemId.toString()
 					onNavigateToItem(item)
@@ -282,7 +302,7 @@ fun SearchScreen(
 			}
 		}
 
-		if (searchResults.isEmpty() && query.isNotBlank() && !isSearching) {
+		if (searchResults.isEmpty() && seerrResults.isEmpty() && query.isNotBlank() && !isSearching) {
 			Box(
 				modifier = Modifier
 					.fillMaxWidth()
@@ -309,22 +329,27 @@ fun SearchScreen(
 						color = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.textMuted,
 						style = MaterialTheme.typography.bodyMedium
 					)
-					// Not in the library: offer to look it up on Seerr, where it can be requested
-					val seerr = org.koin.compose.koinInject<org.jellyfin.androidtv.seerr.SeerrClient>()
-					if (seerr.hasSession) {
-						val navigation = org.koin.compose.koinInject<org.jellyfin.androidtv.ui.navigation.NavigationRepository>()
-						org.jellyfin.androidtv.ui.base.button.Button(
-							onClick = { navigation.navigate(org.jellyfin.androidtv.ui.navigation.Destinations.seerrSearch(query.trim())) },
-							modifier = Modifier.padding(top = 12.dp),
-						) {
-							org.jellyfin.androidtv.ui.base.Text(stringResource(R.string.search_on_seerr, query.trim()))
-						}
-					}
 				}
 			}
 		}
 
-		if (query.isEmpty()) {
+		if (query.isEmpty() && trending.isNotEmpty()) {
+			// Erg: something to browse before typing; these are requestable from their Discover page
+			Column(
+				modifier = Modifier
+					.fillMaxWidth()
+					.weight(1f)
+					.padding(top = 24.dp),
+			) {
+				SeerrResultRow(
+					title = stringResource(R.string.seerr_row_trending),
+					items = trending,
+					onClick = openSeerr,
+					returnId = lastOpenedId,
+					returnFocus = returnFocus,
+				)
+			}
+		} else if (query.isEmpty()) {
 			Box(
 				modifier = Modifier
 					.fillMaxWidth()
@@ -473,6 +498,8 @@ private fun TVButton(
 @Composable
 private fun SearchResultsList(
 	results: List<SearchResultGroup>,
+	seerrResults: List<org.jellyfin.androidtv.seerr.SeerrResult>,
+	onSeerrClicked: (org.jellyfin.androidtv.seerr.SeerrResult) -> Unit,
 	onItemClicked: (BaseRowItem) -> Unit,
 	returnId: String?,
 	returnFocus: FocusRequester,
@@ -492,10 +519,57 @@ private fun SearchResultsList(
 				onItemClick = { baseItemDto ->
 					val baseRowItem = BaseItemDtoBaseRowItem(baseItemDto)
 					onItemClicked(baseRowItem)
-
-
 				}
 			)
+		}
+
+		// Erg: after the library's results, what Seerr has that the library does not
+		if (seerrResults.isNotEmpty()) item(key = "seerr") {
+			SeerrResultRow(
+				title = stringResource(R.string.search_not_in_library),
+				items = seerrResults,
+				onClick = onSeerrClicked,
+				returnId = returnId,
+				returnFocus = returnFocus,
+			)
+		}
+	}
+}
+
+private const val SEERR_KEY_PREFIX = "seerr:"
+private fun seerrKey(item: org.jellyfin.androidtv.seerr.SeerrResult) = "$SEERR_KEY_PREFIX${item.mediaType}-${item.id}"
+
+/** A row of Seerr posters (with request status) in the same style as the library's result rows. */
+@Composable
+private fun SeerrResultRow(
+	title: String,
+	items: List<org.jellyfin.androidtv.seerr.SeerrResult>,
+	onClick: (org.jellyfin.androidtv.seerr.SeerrResult) -> Unit,
+	returnId: String?,
+	returnFocus: FocusRequester,
+) {
+	Column(
+		modifier = Modifier.fillMaxWidth(),
+		verticalArrangement = Arrangement.spacedBy(12.dp)
+	) {
+		Text(
+			text = title.uppercase(),
+			color = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.text,
+			style = MaterialTheme.typography.titleMedium,
+			modifier = Modifier.padding(horizontal = 20.dp)
+		)
+
+		LazyRow(
+			horizontalArrangement = Arrangement.spacedBy(12.dp),
+			contentPadding = PaddingValues(horizontal = 20.dp)
+		) {
+			items(items, key = { seerrKey(it) }) { item ->
+				org.jellyfin.androidtv.seerr.ui.PosterCard(
+					item = item,
+					onClick = { onClick(item) },
+					modifier = if (seerrKey(item) == returnId) Modifier.focusRequester(returnFocus) else Modifier,
+				)
+			}
 		}
 	}
 }

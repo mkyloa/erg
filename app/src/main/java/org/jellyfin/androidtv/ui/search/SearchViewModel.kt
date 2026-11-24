@@ -9,13 +9,17 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import org.jellyfin.androidtv.seerr.SeerrClient
+import org.jellyfin.androidtv.seerr.SeerrResult
+import timber.log.Timber
 import org.jellyfin.androidtv.R
 import org.jellyfin.sdk.model.api.BaseItemKind
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 
 class SearchViewModel(
-	private val searchRepository: SearchRepository
+	private val searchRepository: SearchRepository,
+	private val seerr: SeerrClient,
 ) : ViewModel() {
 	companion object {
 		private val debounceDuration = 600.milliseconds
@@ -39,6 +43,25 @@ class SearchViewModel(
 	}
 
 	private var searchJob: Job? = null
+	private var seerrJob: Job? = null
+
+	// Erg: titles from Seerr that are not in the library, so they can be requested from search
+	private val _seerrResults = MutableStateFlow<List<SeerrResult>>(emptyList())
+	val seerrResults = _seerrResults.asStateFlow()
+
+	// Erg: Seerr's trending titles, shown before anything is typed
+	private val _trending = MutableStateFlow<List<SeerrResult>>(emptyList())
+	val trending = _trending.asStateFlow()
+
+	val seerrEnabled get() = seerr.hasSession
+
+	init {
+		if (seerr.hasSession) viewModelScope.launch {
+			_trending.value = runCatching { seerr.trending().results.requestable(includeAvailable = true) }
+				.onFailure { Timber.w(it, "Seerr trending failed") }
+				.getOrDefault(emptyList())
+		}
+	}
 
 	private var previousQuery: String? = null
 
@@ -57,11 +80,21 @@ class SearchViewModel(
 		previousQuery = trimmed
 
 		searchJob?.cancel()
+		seerrJob?.cancel()
+		_seerrResults.value = emptyList()
 
 		if (trimmed.isBlank()) {
 			_isSearching.value = false
 			_searchResultsFlow.value = emptyList()
 			return true
+		}
+
+		// Separate from the library search, so a slow Seerr never holds up library results
+		if (seerr.hasSession) seerrJob = viewModelScope.launch {
+			delay(debounce)
+			_seerrResults.value = runCatching { seerr.search(trimmed).results.requestable(includeAvailable = false) }
+				.onFailure { Timber.w(it, "Seerr search failed") }
+				.getOrDefault(emptyList())
 		}
 
 		_isSearching.value = true
@@ -82,3 +115,11 @@ class SearchViewModel(
 		return true
 	}
 }
+
+/** Movies and shows only; [includeAvailable] false drops what is already in the library. */
+private fun List<SeerrResult>.requestable(includeAvailable: Boolean) = this
+	.filter { it.isMovie || it.isTv }
+	.filter { includeAvailable || !it.status.isAvailable }
+	.take(SEERR_ROW_LIMIT)
+
+private const val SEERR_ROW_LIMIT = 20

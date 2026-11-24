@@ -1168,14 +1168,12 @@
     <string name="seerr_setup_needed_caption">Add your Seerr server and sign in to browse and request titles.</string>
     <string name="seerr_open_settings">Open Seerr settings</string>
     <string name="seerr_search_hint">Search movies and shows</string>
-    <string name="search_on_seerr">Search Seerr for “%1$s”</string>
+    <string name="search_not_in_library">Not in your library</string>
     <string name="seerr_row_trending">Trending</string>
     <string name="seerr_row_popular_movies">Popular movies</string>
     <string name="seerr_row_popular_tv">Popular shows</string>
     <string name="seerr_row_upcoming_movies">Upcoming movies</string>
     <string name="seerr_row_upcoming_tv">Upcoming shows</string>
-    <string name="seerr_row_search_results">Results</string>
-    <string name="seerr_no_results">Nothing found</string>
     <string name="seerr_load_failed">Couldn\'t reach Seerr: %1$s</string>
     <string name="seerr_retry">Retry</string>
     <string name="seerr_status_available">Available</string>
