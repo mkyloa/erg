@@ -1238,6 +1238,11 @@
     <string name="erg_card_corners_small">Small</string>
     <string name="erg_card_corners_medium">Medium</string>
     <string name="erg_card_corners_large">Large</string>
+    <string name="erg_corners_round">Round</string>
+    <string name="erg_hero_corners">Banner corners</string>
+    <string name="erg_button_corners">Button shape</string>
+    <string name="erg_home">Home</string>
+    <string name="erg_random_none">No movies found for a random pick</string>
     <string name="erg_unpin_from_home">Unpin from home</string>
     <string name="erg_pinned_to_home">“%1$s” pinned to home</string>
     <string name="erg_unpinned_from_home">“%1$s” removed from home</string>

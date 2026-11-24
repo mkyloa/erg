@@ -324,9 +324,9 @@ private fun Android12CompatibleCarousel(
 			.border(
 				width = 2.dp,
 				color = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onBackground.copy(alpha = borderAlpha),
-				shape = RoundedCornerShape(12.dp),
+				shape = org.jellyfin.androidtv.ui.composable.item.rememberBannerShape(),
 			)
-			.clip(RoundedCornerShape(12.dp))
+			.clip(org.jellyfin.androidtv.ui.composable.item.rememberBannerShape())
 			.semantics {
 				contentDescription = "Featured items carousel - Android 12 compatibility mode"
 			}
@@ -670,7 +670,7 @@ private fun WatchNowButton(onItemSelected: () -> Unit) {
 			end = 15.3.dp,
 			bottom = 0.dp
 		),
-		shape = ButtonDefaults.shape(shape = RoundedCornerShape(14.dp)),
+		shape = ButtonDefaults.shape(shape = org.jellyfin.androidtv.ui.composable.item.rememberButtonShape()),
 		colors = ButtonDefaults.colors(
 			containerColor = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.highlight.copy(alpha = 0.8f),
 			contentColor = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onHighlight,

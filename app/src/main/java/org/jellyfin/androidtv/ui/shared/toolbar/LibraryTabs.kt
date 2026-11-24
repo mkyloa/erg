@@ -1,7 +1,5 @@
 package org.jellyfin.androidtv.ui.shared.toolbar
 
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -9,20 +7,18 @@ import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.flow.first
 import org.jellyfin.androidtv.data.repository.UserViewsRepository
-import org.jellyfin.androidtv.ui.base.JellyfinTheme
+import org.jellyfin.androidtv.ui.composable.item.rememberButtonShape
 import org.jellyfin.androidtv.ui.base.Text
 import org.jellyfin.androidtv.ui.itemhandling.ItemLauncher
 import org.jellyfin.sdk.model.api.BaseItemDto
@@ -61,24 +57,19 @@ fun LibraryTabs() {
 private fun LibraryTab(name: String, onClick: () -> Unit) {
 	val interactionSource = remember { MutableInteractionSource() }
 	val focused by interactionSource.collectIsFocusedAsState()
-	val colors = JellyfinTheme.colorScheme
-	val background by animateColorAsState(
-		if (focused) colors.onBackground.copy(alpha = 0.9f) else Color.Transparent,
-		tween(150),
-		label = "library-tab-background",
-	)
+	val (background, content) = toolbarButtonColors(focused)
 
 	Box(
 		modifier = Modifier
-			.height(28.dp)
-			.background(background, RoundedCornerShape(14.dp))
+			.height(ToolbarButtonHeight)
+			.background(background, rememberButtonShape())
 			.clickable(onClick = onClick, interactionSource = interactionSource, indication = null)
 			.padding(horizontal = 12.dp),
 		contentAlignment = Alignment.Center,
 	) {
 		Text(
 			text = name,
-			color = if (focused) colors.background else colors.onBackground,
+			color = content,
 			fontSize = 14.sp,
 			maxLines = 1,
 			overflow = TextOverflow.Ellipsis,

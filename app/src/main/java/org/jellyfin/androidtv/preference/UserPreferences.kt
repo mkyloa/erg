@@ -68,8 +68,10 @@ class UserPreferences(context: Context) : SharedPreferenceStore(
 		 */
 		var compactLayout = booleanPreference("erg_compact_layout", false)
 
-		/** Erg: corner radius of poster and thumbnail cards */
-		var cardCorners = enumPreference("erg_card_corners", org.jellyfin.androidtv.preference.constant.CardCorners.LARGE)
+		/** Erg: corners of poster and thumbnail cards, the home banner, and top bar / banner buttons */
+		var cardCorners = enumPreference("erg_card_corners", org.jellyfin.androidtv.preference.constant.CornerStyle.LARGE)
+		var heroCorners = enumPreference("erg_hero_corners", org.jellyfin.androidtv.preference.constant.CornerStyle.LARGE)
+		var buttonCorners = enumPreference("erg_button_corners", org.jellyfin.androidtv.preference.constant.CornerStyle.ROUND)
 
 		/**
 		 * Behavior of app background while browsing

@@ -73,6 +73,26 @@ fun SettingsCustomizationScreen() {
 				modifier = Modifier.focusKey(Routes.CUSTOMIZATION_CARD_CORNERS)
 			)
 		}
+		item {
+			var heroCorners by rememberPreference(userPreferences, UserPreferences.heroCorners)
+
+			ListButton(
+				headingContent = { Text(stringResource(R.string.erg_hero_corners)) },
+				captionContent = { Text(stringResource(heroCorners.nameRes)) },
+				onClick = { router.push(Routes.CUSTOMIZATION_HERO_CORNERS) },
+				modifier = Modifier.focusKey(Routes.CUSTOMIZATION_HERO_CORNERS)
+			)
+		}
+		item {
+			var buttonCorners by rememberPreference(userPreferences, UserPreferences.buttonCorners)
+
+			ListButton(
+				headingContent = { Text(stringResource(R.string.erg_button_corners)) },
+				captionContent = { Text(stringResource(buttonCorners.nameRes)) },
+				onClick = { router.push(Routes.CUSTOMIZATION_BUTTON_CORNERS) },
+				modifier = Modifier.focusKey(Routes.CUSTOMIZATION_BUTTON_CORNERS)
+			)
+		}
 
 		item {
 			var clockBehavior by rememberPreference(userPreferences, UserPreferences.clockBehavior)

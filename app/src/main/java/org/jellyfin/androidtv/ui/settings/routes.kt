@@ -16,7 +16,8 @@ import org.jellyfin.androidtv.ui.settings.screen.customization.SettingsCustomiza
 import org.jellyfin.androidtv.ui.settings.screen.customization.SettingsCustomizationClockScreen
 import org.jellyfin.androidtv.ui.settings.screen.customization.SettingsCustomizationScreen
 import org.jellyfin.androidtv.ui.settings.screen.customization.SettingsCustomizationThemeScreen
-import org.jellyfin.androidtv.ui.settings.screen.customization.SettingsCustomizationCardCornersScreen
+import org.jellyfin.androidtv.ui.composable.item.CornerTarget
+import org.jellyfin.androidtv.ui.settings.screen.customization.SettingsCustomizationCornersScreen
 import org.jellyfin.androidtv.ui.settings.screen.customization.SettingsCustomizationWatchedIndicatorScreen
 import org.jellyfin.androidtv.ui.settings.screen.customization.subtitle.SettingsSubtitleTextStrokeColorScreen
 import org.jellyfin.androidtv.ui.settings.screen.customization.subtitle.SettingsSubtitlesBackgroundColorScreen
@@ -76,6 +77,8 @@ object Routes {
 	const val CUSTOMIZATION_CLOCK = "/customization/clock"
 	const val CUSTOMIZATION_WATCHED_INDICATOR = "/customization/watch-indicators"
 	const val CUSTOMIZATION_CARD_CORNERS = "/customization/card-corners"
+	const val CUSTOMIZATION_HERO_CORNERS = "/customization/banner-corners"
+	const val CUSTOMIZATION_BUTTON_CORNERS = "/customization/button-corners"
 	const val CUSTOMIZATION_BACKDROP = "/customization/backdrop"
 	const val CUSTOMIZATION_SCREENSAVER = "/customization/screensaver"
 	const val CUSTOMIZATION_SCREENSAVER_TIMEOUT = "/customization/screensaver/timeout"
@@ -176,7 +179,13 @@ val routes = mapOf<String, RouteComposable>(
 		SettingsCustomizationWatchedIndicatorScreen()
 	},
 	Routes.CUSTOMIZATION_CARD_CORNERS to {
-		SettingsCustomizationCardCornersScreen()
+		SettingsCustomizationCornersScreen(CornerTarget.CARDS)
+	},
+	Routes.CUSTOMIZATION_HERO_CORNERS to {
+		SettingsCustomizationCornersScreen(CornerTarget.BANNER)
+	},
+	Routes.CUSTOMIZATION_BUTTON_CORNERS to {
+		SettingsCustomizationCornersScreen(CornerTarget.BUTTONS)
 	},
 	Routes.CUSTOMIZATION_BACKDROP to {
 		SettingsCustomizationBackdropScreen()
