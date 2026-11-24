@@ -57,7 +57,7 @@ fun ToolbarClock(
 	Text(
 		text = currentTime,
 		fontSize = 20.sp,
-		color = Color.White,
+		color = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.text,
 		modifier = modifier,
 	)
 }

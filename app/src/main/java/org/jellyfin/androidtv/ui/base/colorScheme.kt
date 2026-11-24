@@ -80,6 +80,22 @@ data class ColorScheme(
 
 	val surface: Color,
 	val scrim: Color,
+
+	// Erg: colors many screens used to hard-code. Defaults are those old values, so only themes
+	// that set them (gruvbox) look different.
+	/** Plain text and icons on the background. */
+	val text: Color = Color.White,
+	/** Hints, captions and empty-state text. */
+	val textMuted: Color = Color.Gray,
+	/** Solid fill for the focused primary button or tile, and what goes on it. */
+	val highlight: Color = Color.White,
+	val onHighlight: Color = Color.Black,
+	/** Status colors (Seerr availability, messages). */
+	val success: Color = Color(0xFF22C55E),
+	val successDim: Color = Color(0xFF16A34A),
+	val warning: Color = Color(0xFFF59E0B),
+	val info: Color = Color(0xFF6366F1),
+	val error: Color = Color(0xFFF87171),
 )
 
 /** Gruvbox dark (github.com/morhetz/gruvbox) for Compose screens. */
@@ -104,8 +120,8 @@ fun gruvboxColorScheme(): ColorScheme = ColorScheme(
 	seekbarBuffer = Color(0xFF7C6F64),
 	recording = Color(0xFFFB4934),
 	onRecording = Color(0xFFEBDBB2),
-	badge = Color(0xFFFE8019),
-	onBadge = Color(0xFF282828),
+	badge = Color(0xD9282828),
+	onBadge = Color(0xFFEBDBB2),
 	listHeader = Color(0xFFEBDBB2),
 	listOverline = Color(0xFF928374),
 	listHeadline = Color(0xFFEBDBB2),
@@ -114,11 +130,21 @@ fun gruvboxColorScheme(): ColorScheme = ColorScheme(
 	listButtonFocused = Color(0xFF504945),
 	surface = Color(0xFF3C3836),
 	scrim = Color(0xAB1D2021),
+	text = Color(0xFFEBDBB2),
+	textMuted = Color(0xFFA89984),
+	highlight = Color(0xFFEBDBB2),
+	onHighlight = Color(0xFF282828),
+	success = Color(0xFFB8BB26),
+	successDim = Color(0xFF98971A),
+	warning = Color(0xFFFABD2F),
+	info = Color(0xFF83A598),
+	error = Color(0xFFFB4934),
 )
 
 /** Compose colors for an app theme. Themes without their own scheme use the default. */
 fun colorSchemeFor(theme: AppTheme): ColorScheme = when (theme) {
 	AppTheme.GRUVBOX -> gruvboxColorScheme()
+	AppTheme.GRUVBOX_BLACK -> gruvboxColorScheme().copy(background = Color.Black, scrim = Color(0xAB000000))
 	else -> colorScheme()
 }
 

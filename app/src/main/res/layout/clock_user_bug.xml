@@ -27,7 +27,7 @@
         android:paddingStart="24dp"
         android:shadowColor="@color/black"
         android:shadowRadius="4"
-        android:textColor="@color/white"
+        android:textColor="?attr/textColorPrimary"
         android:textSize="20sp"
         tools:ignore="RtlSymmetry"
         tools:text="13:37" />

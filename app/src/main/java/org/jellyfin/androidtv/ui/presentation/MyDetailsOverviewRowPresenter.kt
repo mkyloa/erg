@@ -100,7 +100,7 @@ class MyDetailsOverviewRowPresenter(
 			if (!resolutionText.isNullOrEmpty()) {
 				val resolutionTextView = android.widget.TextView(view.context).apply {
 					text = resolutionText
-					setTextColor(androidx.core.content.ContextCompat.getColor(view.context, org.jellyfin.androidtv.R.color.basic_button_text))
+					setTextColor(org.jellyfin.androidtv.util.Utils.getThemeColor(view.context, org.jellyfin.androidtv.R.attr.textColorPrimary))
 					textSize = 12f
 					setTypeface(android.graphics.Typeface.DEFAULT_BOLD)
 					gravity = android.view.Gravity.CENTER_VERTICAL
@@ -125,7 +125,7 @@ class MyDetailsOverviewRowPresenter(
 			if (!resolutionText.isNullOrEmpty()) {
 				val bulletTextView = android.widget.TextView(view.context).apply {
 					text = "  •  "
-					setTextColor(androidx.core.content.ContextCompat.getColor(view.context, org.jellyfin.androidtv.R.color.basic_button_text))
+					setTextColor(org.jellyfin.androidtv.util.Utils.getThemeColor(view.context, org.jellyfin.androidtv.R.attr.textColorPrimary))
 					textSize = 16f
 					setTypeface(android.graphics.Typeface.SANS_SERIF)
 					gravity = android.view.Gravity.CENTER_VERTICAL

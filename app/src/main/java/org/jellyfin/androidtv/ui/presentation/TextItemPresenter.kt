@@ -18,7 +18,7 @@ class TextItemPresenter : Presenter() {
 			layoutParams = ViewGroup.LayoutParams(ITEM_WIDTH, ITEM_HEIGHT)
 			isFocusable = true
 			isFocusableInTouchMode = true
-			setTextColor(Color.WHITE)
+			setTextColor(org.jellyfin.androidtv.util.Utils.getThemeColor(context, org.jellyfin.androidtv.R.attr.textColorPrimary))
 			gravity = Gravity.CENTER
 			textSize = TEXT_SIZE
 		}

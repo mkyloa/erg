@@ -9,7 +9,6 @@ import timber.log.Timber
 
 class PositionableListRowPresenter : CustomListRowPresenter {
     private var viewHolder: ViewHolder? = null
-    private var shouldCenterContent = false
 
     // Backward compatible constructor
     @JvmOverloads
@@ -17,15 +16,13 @@ class PositionableListRowPresenter : CustomListRowPresenter {
         init()
     }
 
-    // New constructor with context and spacing preference
-    constructor(context: Context, useLargeSpacing: Boolean = false, centerContent: Boolean = false) : this(
+    // New constructor with context and spacing preference (centerContent is no longer used)
+    constructor(context: Context, useLargeSpacing: Boolean = false, @Suppress("UNUSED_PARAMETER") centerContent: Boolean = false) : this(
         context.resources.getDimensionPixelSize(
             if (useLargeSpacing) R.dimen.home_row_spacing_large
             else R.dimen.home_row_spacing
         )
-    ) {
-        shouldCenterContent = centerContent
-    }
+    )
 
 
     private fun init() {
@@ -43,8 +40,6 @@ class PositionableListRowPresenter : CustomListRowPresenter {
     }
 
     override fun isUsingDefaultListSelectEffect() = true
-
-    override fun isUsingDefaultShadow() = false
 
     override fun onRowViewExpanded(viewHolder: RowPresenter.ViewHolder, expanded: Boolean) {
         super.onRowViewExpanded(viewHolder, expanded)
@@ -65,22 +60,9 @@ class PositionableListRowPresenter : CustomListRowPresenter {
         super.onBindRowViewHolder(holder, item)
         if (holder is ViewHolder) {
             viewHolder = holder
-            if (shouldCenterContent) {
-                applyCenteringToRow(holder)
-            }
-        }
-    }
-
-    private fun applyCenteringToRow(holder: ViewHolder) {
-        try {
-            val gridView = holder.gridView
-
-            val screenWidth = gridView.context.resources.displayMetrics.widthPixels
-            val paddingStart = (screenWidth * 0.05).toInt() // Further reduced to 5% from left
-
-            gridView.setPadding(paddingStart, gridView.paddingTop, gridView.paddingRight, gridView.paddingBottom)
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to apply centering to row")
+            // Erg: no extra left padding here any more. ListRowPresenter resets the row's padding
+            // whenever selection changes, so this flipped back and forth and re-laid-out the
+            // whole list on every row change.
         }
     }
 

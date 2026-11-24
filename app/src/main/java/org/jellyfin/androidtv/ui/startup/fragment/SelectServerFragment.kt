@@ -183,7 +183,7 @@ class SelectServerFragment : Fragment() {
 						Text(
 							text = notification.message,
 							modifier = Modifier.padding(10.dp),
-							color = colorResource(id = R.color.white),
+							color = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.text,
 						)
 					}
 				}

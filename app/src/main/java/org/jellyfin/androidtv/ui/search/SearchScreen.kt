@@ -55,6 +55,7 @@ import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -87,7 +88,11 @@ fun SearchScreen(
 	val searchResults by viewModel.searchResultsFlow.collectAsStateWithLifecycle()
 	val isSearching by viewModel.isSearching.collectAsStateWithLifecycle()
 
-	var query by remember { mutableStateOf(initialQuery ?: "") }
+	// Saveable so the query (and its results) are still there after visiting a result or Seerr
+	var query by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(initialQuery ?: "") }
+	// The result last opened, so Back lands on it instead of the search box and keyboard
+	var lastOpenedId by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf<String?>(null) }
+	val returnFocus = remember { FocusRequester() }
 	var isSearchFocused by remember { mutableStateOf(false) }
 	var isVoiceButtonFocused by remember { mutableStateOf(false) }
 	var isClearButtonFocused by remember { mutableStateOf(false) }
@@ -124,7 +129,21 @@ fun SearchScreen(
 			viewModel.searchImmediately(initialQuery)
 			delay(200)
 		} else {
+			// Coming back with a restored query: show its results again (the view model is new)
+			if (query.isNotBlank()) viewModel.searchImmediately(query)
 			delay(100)
+			if (lastOpenedId == null || query.isBlank()) searchFieldFocusRequester.requestFocus()
+		}
+	}
+
+	LaunchedEffect(searchResults) {
+		val id = lastOpenedId ?: return@LaunchedEffect
+		if (searchResults.any { group -> group.items.any { it.id.toString() == id } }) {
+			delay(100)
+			runCatching { returnFocus.requestFocus() }.onFailure { searchFieldFocusRequester.requestFocus() }
+			lastOpenedId = null
+		} else if (searchResults.isNotEmpty() && !isSearching) {
+			lastOpenedId = null
 			searchFieldFocusRequester.requestFocus()
 		}
 	}
@@ -178,7 +197,7 @@ fun SearchScreen(
 				Icon(
 					painterResource(R.drawable.ic_mic),
 					contentDescription = stringResource(R.string.lbl_voice_search),
-					tint = if (isVoiceButtonFocused) Color.Red else Color.White,
+					tint = if (isVoiceButtonFocused) org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.error else org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.text,
 					modifier = Modifier.size(24.dp)
 				)
 			}
@@ -222,7 +241,7 @@ fun SearchScreen(
 					Icon(
 						Icons.Default.Close,
 						contentDescription = stringResource(R.string.lbl_cancel),
-						tint = if (isClearButtonFocused) Color.Black else Color.White,
+						tint = if (isClearButtonFocused) org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onHighlight else org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.text,
 						modifier = Modifier.size(24.dp)
 					)
 				}
@@ -236,7 +255,12 @@ fun SearchScreen(
 		) {
 			SearchResultsList(
 				results = searchResults.toList(),
-				onItemClicked = onNavigateToItem,
+				onItemClicked = { item ->
+					lastOpenedId = item.itemId.toString()
+					onNavigateToItem(item)
+				},
+				returnId = lastOpenedId,
+				returnFocus = returnFocus,
 				modifier = Modifier
 					.fillMaxWidth()
 					.weight(1f)
@@ -272,19 +296,30 @@ fun SearchScreen(
 					Icon(
 						Icons.Default.Search,
 						contentDescription = null,
-						tint = Color.Gray,
+						tint = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.textMuted,
 						modifier = Modifier.size(64.dp)
 					)
 					Text(
 						text = stringResource(R.string.no_results_found),
-						color = Color.White,
+						color = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.text,
 						style = MaterialTheme.typography.headlineSmall
 					)
 					Text(
 						text = stringResource(R.string.lbl_search_try),
-						color = Color.Gray,
+						color = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.textMuted,
 						style = MaterialTheme.typography.bodyMedium
 					)
+					// Not in the library: offer to look it up on Seerr, where it can be requested
+					val seerr = org.koin.compose.koinInject<org.jellyfin.androidtv.seerr.SeerrClient>()
+					if (seerr.hasSession) {
+						val navigation = org.koin.compose.koinInject<org.jellyfin.androidtv.ui.navigation.NavigationRepository>()
+						org.jellyfin.androidtv.ui.base.button.Button(
+							onClick = { navigation.navigate(org.jellyfin.androidtv.ui.navigation.Destinations.seerrSearch(query.trim())) },
+							modifier = Modifier.padding(top = 12.dp),
+						) {
+							org.jellyfin.androidtv.ui.base.Text(stringResource(R.string.search_on_seerr, query.trim()))
+						}
+					}
 				}
 			}
 		}
@@ -303,17 +338,17 @@ fun SearchScreen(
 					Icon(
 						Icons.Default.Search,
 						contentDescription = null,
-						tint = Color.Gray,
+						tint = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.textMuted,
 						modifier = Modifier.size(64.dp)
 					)
 					Text(
 						text = stringResource(R.string.start_typing),
-						color = Color.White,
+						color = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.text,
 						style = MaterialTheme.typography.headlineSmall
 					)
 					Text(
 						text = stringResource(R.string.use_keyboard_or),
-						color = Color.Gray,
+						color = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.textMuted,
 						style = MaterialTheme.typography.bodyMedium
 					)
 				}
@@ -332,12 +367,27 @@ private fun TVSearchFieldWithKeyboard(
 	modifier: Modifier = Modifier
 ) {
 	var isFocused by remember { mutableStateOf(false) }
+	val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
 
 	OutlinedTextField(
 		value = value,
 		onValueChange = onValueChange,
 		modifier = modifier
 			.height(56.dp)
+			// Single-line field: Up/Down would only move the cursor, so hand them to focus
+			// navigation to reach the results (and the "Search Seerr" button) with the remote
+			.onPreviewKeyEvent { event ->
+				val direction = when (event.key) {
+					Key.DirectionDown -> androidx.compose.ui.focus.FocusDirection.Down
+					Key.DirectionUp -> androidx.compose.ui.focus.FocusDirection.Up
+					else -> null
+				}
+				if (direction == null) false
+				else {
+					if (event.type == KeyEventType.KeyDown) focusManager.moveFocus(direction)
+					true
+				}
+			}
 			.focusRequester(focusRequester)
 			.onFocusChanged { focusState ->
 				isFocused = focusState.isFocused
@@ -346,24 +396,24 @@ private fun TVSearchFieldWithKeyboard(
 		placeholder = {
 			Text(
 				stringResource(R.string.lbl_search_hint),
-				color = Color.Gray
+				color = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.textMuted
 			)
 		},
 		leadingIcon = {
 			Icon(
 				Icons.Default.Search,
 				contentDescription = stringResource(R.string.lbl_search_hint),
-				tint = if (isFocused) Color.White else Color.Gray
+				tint = if (isFocused) org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.text else org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.textMuted
 			)
 		},
 		colors = OutlinedTextFieldDefaults.colors(
-			focusedTextColor = Color.White,
-			unfocusedTextColor = Color.White,
-			cursorColor = Color.White,
-			focusedBorderColor = Color.White,
-			unfocusedBorderColor = Color.Gray.copy(alpha = 0.5f),
-			focusedContainerColor = Color.White.copy(alpha = 0.15f),
-			unfocusedContainerColor = Color.White.copy(alpha = 0.08f)
+			focusedTextColor = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.text,
+			unfocusedTextColor = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.text,
+			cursorColor = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.text,
+			focusedBorderColor = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.text,
+			unfocusedBorderColor = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.textMuted.copy(alpha = 0.5f),
+			focusedContainerColor = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.text.copy(alpha = 0.15f),
+			unfocusedContainerColor = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.text.copy(alpha = 0.08f)
 		),
 		keyboardOptions = KeyboardOptions(
 			imeAction = ImeAction.Search
@@ -375,7 +425,7 @@ private fun TVSearchFieldWithKeyboard(
 		shape = RoundedCornerShape(8.dp),
 		textStyle = TextStyle(
 			fontSize = 18.sp,
-			color = Color.White
+			color = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.text
 		)
 	)
 }
@@ -393,12 +443,12 @@ private fun TVButton(
 		modifier = modifier
 			.size(50.dp)
 			.background(
-				color = if (isFocused) Color.White else Color.White.copy(alpha = 0.08f),
+				color = if (isFocused) org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.text else org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.text.copy(alpha = 0.08f),
 				shape = CircleShape
 			)
 			.border(
 				width = if (isFocused) 2.dp else 1.dp,
-				color = if (isFocused) Color.White else Color.Gray.copy(alpha = 0.5f),
+				color = if (isFocused) org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.text else org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.textMuted.copy(alpha = 0.5f),
 				shape = CircleShape
 			)
 			.focusRequester(focusRequester)
@@ -424,9 +474,10 @@ private fun TVButton(
 private fun SearchResultsList(
 	results: List<SearchResultGroup>,
 	onItemClicked: (BaseRowItem) -> Unit,
+	returnId: String?,
+	returnFocus: FocusRequester,
 	modifier: Modifier = Modifier
 ) {
-	val context = LocalContext.current
 
 	LazyColumn(
 		modifier = modifier,
@@ -436,6 +487,8 @@ private fun SearchResultsList(
 			SearchResultGroup(
 				title = stringResource(group.labelRes),
 				items = group.items.toList(),
+				returnId = returnId,
+				returnFocus = returnFocus,
 				onItemClick = { baseItemDto ->
 					val baseRowItem = BaseItemDtoBaseRowItem(baseItemDto)
 					onItemClicked(baseRowItem)
@@ -451,6 +504,8 @@ private fun SearchResultsList(
 private fun SearchResultGroup(
 	title: String,
 	items: List<org.jellyfin.sdk.model.api.BaseItemDto>,
+	returnId: String?,
+	returnFocus: FocusRequester,
 	onItemClick: (org.jellyfin.sdk.model.api.BaseItemDto) -> Unit
 ) {
 	Column(
@@ -459,7 +514,7 @@ private fun SearchResultGroup(
 	) {
 		Text(
 			text = title.uppercase(),
-			color = Color.White,
+			color = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.text,
 			style = MaterialTheme.typography.titleMedium,
 			modifier = Modifier.padding(horizontal = 20.dp)
 		)
@@ -471,7 +526,8 @@ private fun SearchResultGroup(
 			items(items, key = { it.id }) { item ->
 				SearchItemCard(
 					item = item,
-					onClick = { onItemClick(item) }
+					onClick = { onItemClick(item) },
+					focusRequester = returnFocus.takeIf { item.id.toString() == returnId },
 				)
 			}
 		}
@@ -482,7 +538,8 @@ private fun SearchResultGroup(
 private fun SearchItemCard(
 	item: org.jellyfin.sdk.model.api.BaseItemDto,
 	onClick: () -> Unit,
-	modifier: Modifier = Modifier
+	modifier: Modifier = Modifier,
+	focusRequester: FocusRequester? = null,
 ) {
 	val context = LocalContext.current
 	val imageHelper: ImageHelper by (context as FragmentActivity).inject()
@@ -501,6 +558,7 @@ private fun SearchItemCard(
 		Box(
 			modifier = Modifier
 				.height(cardHeight.dp)
+				.then(if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier)
 				.onFocusChanged { isCardFocused = it.isFocused }
 				.scale(
 					androidx.compose.animation.core.animateFloatAsState(
@@ -520,7 +578,7 @@ private fun SearchItemCard(
 							Color(colorInt)
 						}
 					} else {
-						Color.White.copy(alpha = 0.2f)
+						org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.text.copy(alpha = 0.2f)
 					},
 					shape = RoundedCornerShape(3.dp)
 				)
@@ -558,7 +616,7 @@ private fun SearchItemCard(
 
 			Text(
 				text = displayText,
-				color = Color.White,
+				color = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.text,
 				style = MaterialTheme.typography.bodyMedium,
 				maxLines = 2
 			)

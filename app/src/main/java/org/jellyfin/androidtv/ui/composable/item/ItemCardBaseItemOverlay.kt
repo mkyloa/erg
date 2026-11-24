@@ -122,12 +122,12 @@ private fun WatchIndicator(
 	if (isPlayed) {
 		Badge(
 			modifier = modifier
-				.size(24.dp),
+				.size(18.dp),
 		) {
 			Icon(
 				imageVector = ImageVector.vectorResource(R.drawable.ic_watch),
 				contentDescription = null,
-				modifier = Modifier.size(12.dp)
+				modifier = Modifier.size(10.dp)
 			)
 		}
 	} else if (unplayedItems != null) {
@@ -135,7 +135,7 @@ private fun WatchIndicator(
 
 		Badge(
 			modifier = modifier
-				.sizeIn(minWidth = 24.dp, minHeight = 24.dp),
+				.sizeIn(minWidth = 18.dp, minHeight = 18.dp),
 		) {
 			Text(
 				text = unplayedItems.toString(),

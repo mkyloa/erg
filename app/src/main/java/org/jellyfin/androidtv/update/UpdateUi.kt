@@ -55,14 +55,15 @@ fun ErgUpdatePrompt() {
 		) {
 			Text(stringResource(R.string.erg_update_available, release.version), fontSize = 22.sp, fontWeight = FontWeight.Bold)
 			Text(stringResource(R.string.erg_update_current, updater.currentVersion), color = JellyfinTheme.colorScheme.listCaption)
-			release.body?.takeIf { it.isNotBlank() }?.let {
-				Text(it.take(600), maxLines = 8, color = JellyfinTheme.colorScheme.listCaption)
+			ErgUpdater.readableNotes(release.body)?.let {
+				Text(it.take(700), maxLines = 10, color = JellyfinTheme.colorScheme.listCaption)
 			}
 			Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(top = 8.dp)) {
 				Button(onClick = { scope.launch { updater.install(release) } }, modifier = Modifier.focusRequester(focus)) {
 					Text(stringResource(R.string.erg_update_install))
 				}
 				Button(onClick = { updater.dismiss() }) { Text(stringResource(R.string.erg_update_later)) }
+				Button(onClick = { updater.skip() }) { Text(stringResource(R.string.erg_update_skip)) }
 			}
 		}
 	}

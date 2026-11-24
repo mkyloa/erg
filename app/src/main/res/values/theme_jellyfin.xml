@@ -3,6 +3,10 @@
 
     <style name="Theme.Jellyfin" parent="@style/Theme.AppCompat.Leanback">
         <item name="defaultBackground">@color/black</item>
+        <item name="textColorPrimary">@color/text_primary</item>
+        <item name="textColorSecondary">@color/text_secondary</item>
+        <item name="buttonLabelColor">@color/button_default_normal_text</item>
+        <item name="buttonLabelFocusedColor">@color/button_default_highlight_text</item>
         <item name="android:colorPrimary">@color/black</item>
         <item name="android:colorPrimaryDark">@color/black</item>
         <item name="android:colorAccent">@color/black_transparent</item>

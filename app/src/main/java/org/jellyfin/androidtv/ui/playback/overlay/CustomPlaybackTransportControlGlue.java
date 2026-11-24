@@ -35,6 +35,7 @@ import org.jellyfin.androidtv.ui.playback.overlay.action.EpisodesAction;
 import org.jellyfin.androidtv.ui.playback.overlay.action.FastForwardAction;
 import org.jellyfin.androidtv.ui.playback.overlay.action.GuideAction;
 import org.jellyfin.androidtv.ui.playback.overlay.action.PlayPauseAction;
+import org.jellyfin.androidtv.ui.playback.overlay.action.PlaybackInfoAction;
 import org.jellyfin.androidtv.ui.playback.overlay.action.PlaybackSpeedAction;
 import org.jellyfin.androidtv.ui.playback.overlay.action.PreviousLiveTvChannelAction;
 import org.jellyfin.androidtv.ui.playback.overlay.action.RecordAction;
@@ -64,6 +65,7 @@ public class CustomPlaybackTransportControlGlue extends PlaybackTransportControl
     private SelectQualityAction selectQualityAction;
     private PlaybackSpeedAction playbackSpeedAction;
     private ZoomAction zoomAction;
+    private PlaybackInfoAction playbackInfoAction;
     private ChapterAction chapterAction;
     private EpisodesAction episodesAction;
 
@@ -220,6 +222,8 @@ public class CustomPlaybackTransportControlGlue extends PlaybackTransportControl
         playbackSpeedAction.setLabels(new String[]{context.getString(R.string.lbl_playback_speed)});
         zoomAction = new ZoomAction(context, this);
         zoomAction.setLabels(new String[]{context.getString(R.string.lbl_zoom)});
+        playbackInfoAction = new PlaybackInfoAction(context, this);
+        playbackInfoAction.setLabels(new String[]{context.getString(R.string.lbl_playback_info)});
         chapterAction = new ChapterAction(context, this);
         chapterAction.setLabels(new String[]{context.getString(R.string.lbl_chapters)});
         episodesAction = new EpisodesAction(context, this);
@@ -306,6 +310,8 @@ public class CustomPlaybackTransportControlGlue extends PlaybackTransportControl
             secondaryActionsAdapter.add(selectQualityAction);
             secondaryActionsAdapter.add(zoomAction);
         }
+
+        secondaryActionsAdapter.add(playbackInfoAction);
 
     }
 

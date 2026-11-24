@@ -25,4 +25,9 @@
     <!-- Exit dialog dimensions -->
     <dimen name="exit_dialog_min_width">280dp</dimen>
     <dimen name="exit_dialog_padding">16dp</dimen>
+
+    <!-- Erg: leanback gives the selected row 16dp top padding and the others 8dp. Changing a row's
+         padding re-lays-out the whole list on every row change (~100ms on TV hardware), so keep
+         them equal. -->
+    <dimen name="lb_browse_expanded_selected_row_top_padding">8dp</dimen>
 </resources>

@@ -34,7 +34,7 @@ object TypographyDefaults {
 	)
 
 	val Badge: TextStyle = Default.copy(
-		fontSize = 11.sp,
+		fontSize = 10.sp,
 		fontWeight = FontWeight.W700,
 		textAlign = TextAlign.Center,
 	)

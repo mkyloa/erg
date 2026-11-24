@@ -48,7 +48,7 @@
         android:maxLines="2"
         android:minHeight="48dp"
         android:textAlignment="center"
-        android:textColor="#FFFFFF"
+        android:textColor="?attr/textColorPrimary"
         android:textSize="16sp"
         android:shadowColor="#CC000000"
         android:shadowDx="2"

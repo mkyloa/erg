@@ -1,6 +1,10 @@
 package org.jellyfin.androidtv.ui.home
 
 import android.content.Context
+import androidx.lifecycle.ProcessLifecycleOwner
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.jellyfin.androidtv.auth.repository.UserRepository
@@ -46,6 +50,10 @@ object PinnedRows {
 
 	fun save(prefs: UserSettingPreferences, rows: List<PinnedRow>) {
 		prefs[prefs.pinnedRows] = json.encodeToString(rows)
+		// User settings live on the server; without a commit the change is gone after a restart
+		ProcessLifecycleOwner.get().lifecycleScope.launch(Dispatchers.IO) {
+			if (!prefs.commit()) Timber.w("Pinned rows weren't saved to the server")
+		}
 	}
 
 	fun add(prefs: UserSettingPreferences, row: PinnedRow) {

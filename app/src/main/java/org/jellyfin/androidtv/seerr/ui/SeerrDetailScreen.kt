@@ -2,6 +2,8 @@ package org.jellyfin.androidtv.seerr.ui
 
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.focusGroup
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -44,6 +46,7 @@ import java.util.Locale
 @Composable
 fun SeerrDetailScreen(
 	state: SeerrDetailState,
+	trapFocus: Boolean,
 	viewModel: SeerrDiscoverViewModel,
 	onOpenLibraryItem: (String) -> Unit,
 ) {
@@ -51,6 +54,9 @@ fun SeerrDetailScreen(
 		Modifier
 			.fillMaxSize()
 			.background(org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.background)
+			// Discover stays composed underneath; don't let the D-pad wander onto hidden posters
+			.focusProperties { onExit = { if (trapFocus) cancelFocusChange() } }
+			.focusGroup()
 	) {
 		androidx.compose.animation.AnimatedContent(
 			targetState = state,
@@ -188,7 +194,7 @@ private fun DetailContent(
 			state.message?.let {
 				Text(
 					it,
-					color = if (state.messageIsError) Color(0xFFF87171) else Color(0xFF4ADE80),
+					color = if (state.messageIsError) org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.error else org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.success,
 					fontSize = 14.sp,
 					modifier = Modifier.padding(top = 14.dp),
 				)

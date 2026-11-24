@@ -59,13 +59,13 @@ class GridButtonPresenter @JvmOverloads constructor(
 
         fun bind(value: GridButton) = composeView.setContent {
             val backgroundColor = if (isFocused) {
-                colorResource(android.R.color.white)
+                org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.highlight
             } else {
                 colorResource(R.color.button_default_normal_background)
             }
 
             val textColor = if (isFocused) {
-                colorResource(android.R.color.black)
+                org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onHighlight
             } else {
                 colorResource(R.color.button_default_normal_text)
             }

@@ -36,7 +36,7 @@ class ShadowedClock @JvmOverloads constructor(
 
 		fillPaint.set(paint)
 		fillPaint.style = Paint.Style.FILL
-		fillPaint.color = Color.WHITE
+		fillPaint.color = currentTextColor
 		fillPaint.maskFilter = null
 
 		val x = paddingLeft.toFloat()

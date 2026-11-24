@@ -33,6 +33,9 @@
         <attr name="colorSecondary" format="reference|color" />
         <attr name="textColorPrimary" format="reference|color" />
         <attr name="textColorSecondary" format="reference|color" />
+        <!-- Erg: label colors for the shared button selector -->
+        <attr name="buttonLabelColor" format="reference|color" />
+        <attr name="buttonLabelFocusedColor" format="reference|color" />
         <attr name="buttonBackground" format="reference|color" />
         <attr name="buttonTextColor" format="reference|color" />
         <attr name="surfaceColor" format="reference|color" />

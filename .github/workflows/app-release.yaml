@@ -54,8 +54,13 @@ jobs:
           cp "$APK" "erg-${GITHUB_REF_NAME}.apk"
           PRERELEASE=""
           case "$GITHUB_REF_NAME" in *-*) PRERELEASE="--prerelease" ;; esac
+          # Notes written in the annotated tag's body win; otherwise GitHub lists the merged changes.
+          # Checkout can leave the tag lightweight, so fetch the annotated tag object first.
+          git fetch --force origin "refs/tags/${GITHUB_REF_NAME}:refs/tags/${GITHUB_REF_NAME}"
+          BODY=$(git tag -l --format='%(contents:body)' "$GITHUB_REF_NAME")
+          if [ -n "$BODY" ]; then NOTES=(--notes "$BODY"); else NOTES=(--generate-notes); fi
           gh release create "$GITHUB_REF_NAME" "erg-${GITHUB_REF_NAME}.apk" \
-            --title "Erg ${GITHUB_REF_NAME}" --generate-notes $PRERELEASE
+            --title "Erg ${GITHUB_REF_NAME}" "${NOTES[@]}" $PRERELEASE
 
       - name: Remove keystore
         if: always()

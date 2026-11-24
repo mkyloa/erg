@@ -89,6 +89,10 @@ class HomeRowsFragment : RowsSupportFragment(), AudioEventListener, View.OnKeyLi
 	private var currentItem: BaseRowItem? = null
 	private var currentRow: ListRow? = null
 	private var justLoaded = true
+	// Erg: the pinned rows on screen and the setting they were built from, so pin changes show up on return
+	private var builtPins: String? = null
+	private var pinnedHomeRows: List<Row> = emptyList()
+	private var firstCuratedRow: Row? = null
 	// Special rows
 	private val notificationsRow by lazy { NotificationsHomeFragmentRow(lifecycleScope, notificationsRepository) }
 	private val nowPlaying by lazy { HomeFragmentNowPlayingRow(lifecycleScope, playbackManager, mediaManager) }
@@ -162,6 +166,7 @@ class HomeRowsFragment : RowsSupportFragment(), AudioEventListener, View.OnKeyLi
 			Timber.d("Loaded ${rows.size} home sections in parallel in ${sectionLoadTime}ms")
 
 			// Erg: rows the user pinned (collections, playlists, genres, studios)
+			val pins = userSettingPreferences[userSettingPreferences.pinnedRows]
 			val pinned = PinnedRows.rows(requireContext(), userSettingPreferences, userRepository)
 
 			// Erg curated rows ("genre rows"), shown below the regular sections
@@ -189,14 +194,20 @@ class HomeRowsFragment : RowsSupportFragment(), AudioEventListener, View.OnKeyLi
 						Timber.e(e, "Error adding row to adapter")
 					}
 				}
+				val beforePinned = rowsAdapter.size()
 				pinned.forEach { row ->
 					runCatching { row.addToRowsAdapter(requireContext(), cardPresenter, rowsAdapter) }
 						.onFailure { Timber.e(it, "Error adding pinned row") }
 				}
+				pinnedHomeRows = (beforePinned until rowsAdapter.size()).mapNotNull { rowsAdapter.get(it) }
+				builtPins = pins
+				val beforeCurated = rowsAdapter.size()
 				curated.forEach { row ->
 					runCatching { row.addToRowsAdapter(requireContext(), cardPresenter, rowsAdapter) }
 						.onFailure { Timber.e(it, "Error adding curated row") }
 				}
+
+				firstCuratedRow = rowsAdapter.get(beforeCurated)
 
 				// Wire up Live TV sibling rows so the On Now row removes the buttons row when empty
 				for (i in 0 until rowsAdapter.size()) {
@@ -257,6 +268,30 @@ class HomeRowsFragment : RowsSupportFragment(), AudioEventListener, View.OnKeyLi
 		return keyProcessor.handleKey(keyCode, currentItem, activity)
 	}
 
+	/** Swaps the pinned rows for a fresh set, in the same place, after pins were added or removed. */
+	private fun reloadPinnedRows(pins: String) {
+		builtPins = pins
+		@Suppress("UNCHECKED_CAST")
+		val rowsAdapter = adapter as MutableObjectAdapter<Row>
+		val anchor = pinnedHomeRows.firstNotNullOfOrNull { row -> rowsAdapter.indexOf(row).takeIf { it >= 0 } }
+		pinnedHomeRows.forEach { rowsAdapter.remove(it) }
+		val insertAt = anchor
+			?: firstCuratedRow?.let { row -> rowsAdapter.indexOf(row).takeIf { it >= 0 } }
+			?: rowsAdapter.size()
+
+		// Rows add themselves at the end (their adapters keep a reference to rowsAdapter), then move into place
+		val before = rowsAdapter.size()
+		val cardPresenter = CardPresenter(false, 170)
+		PinnedRows.rows(requireContext(), userSettingPreferences, userRepository).forEach { row ->
+			runCatching { row.addToRowsAdapter(requireContext(), cardPresenter, rowsAdapter) }
+				.onFailure { Timber.e(it, "Error adding pinned row") }
+		}
+		val added = (before until rowsAdapter.size()).mapNotNull { rowsAdapter.get(it) }
+		added.forEach { rowsAdapter.remove(it) }
+		added.forEachIndexed { i, row -> rowsAdapter.add((insertAt + i).coerceAtMost(rowsAdapter.size()), row) }
+		pinnedHomeRows = added
+	}
+
 	override fun onResume() {
 		super.onResume()
 
@@ -268,6 +303,8 @@ class HomeRowsFragment : RowsSupportFragment(), AudioEventListener, View.OnKeyLi
 		}
 
 		if (!justLoaded) {
+			val pins = userSettingPreferences[userSettingPreferences.pinnedRows]
+			if (builtPins != null && pins != builtPins) reloadPinnedRows(pins)
 			refreshCurrentItem()
 			refreshRows()
 		} else {
@@ -440,7 +477,9 @@ class HomeRowsFragment : RowsSupportFragment(), AudioEventListener, View.OnKeyLi
     }
 
     private fun initializeViews() {
-        // Any additional view initialization can go here
+        // Keep the focused row (title included) at the top of the rows area. Leanback's default
+        // offset left tall rows with their title cut off and the previous row peeking above.
+        setAlignment((ROW_ALIGNMENT_DP * resources.displayMetrics.density).toInt())
     }
 
 private val homeFragmentViewsRow = HomeFragmentViewsRow(small = false)
@@ -500,4 +539,9 @@ private inner class ItemViewSelectedListener : OnItemViewSelectedListener {
         }
     }
 }
+
+	companion object {
+		// Distance from the top of the rows area to the selected row
+		const val ROW_ALIGNMENT_DP = 24
+	}
 }

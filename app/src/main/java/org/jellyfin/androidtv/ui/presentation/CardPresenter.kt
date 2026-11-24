@@ -299,11 +299,16 @@ private fun CardViewHolderContent(
 	val aspectRatio = displayConfig.aspectRatio.takeIf { it >= 0.1f }
 		?: image?.aspectRatio?.takeIf { it >= 0.1f } ?: 1f
 
+	// Erg: compact layout shrinks every card by the same factor
+	val userPreferences = koinInject<org.jellyfin.androidtv.preference.UserPreferences>()
+	val scale = remember(userPreferences) {
+		if (userPreferences[org.jellyfin.androidtv.preference.UserPreferences.compactLayout]) COMPACT_CARD_SCALE else 1f
+	}
 	val size = when (item.staticHeight) {
 		true -> DpSize(staticHeight.dp * aspectRatio, staticHeight.dp)
 		false if (aspectRatio > 1f) -> DpSize(130.dp * aspectRatio, 130.dp)
 		else -> DpSize(150.dp * aspectRatio, 150.dp)
-	}
+	} * scale
 
 	val usePreview = displayConfig.overrideShowInfo ?: showInfo
 
@@ -423,3 +428,5 @@ private fun CardViewHolderContent(
 		card()
 	}
 }
+
+private const val COMPACT_CARD_SCALE = 0.82f

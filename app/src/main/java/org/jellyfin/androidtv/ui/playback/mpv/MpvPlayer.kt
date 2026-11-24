@@ -281,6 +281,36 @@ class MpvPlayer(
 
 	fun clearPositionCallbacks() = positionCallbacks.clear()
 
+	/** Decoder and output details for the playback info overlay. */
+	fun stats(): List<String> = buildList {
+		fun str(name: String) = runCatching { mpv.getPropertyString(name) }.getOrNull()?.takeIf { it.isNotBlank() }
+		fun int(name: String) = runCatching { mpv.getPropertyInt(name) }.getOrNull()
+		fun dbl(name: String) = runCatching { mpv.getPropertyDouble(name) }.getOrNull()
+
+		val width = int("video-params/w")
+		val height = int("video-params/h")
+		val video = listOfNotNull(
+			str("video-codec"),
+			if (width != null && height != null) "${width}x$height" else null,
+			dbl("container-fps")?.let { String.format(Locale.US, "%.3f fps", it) },
+		).joinToString(" · ")
+		if (video.isNotEmpty()) add("Video: $video")
+		val color = listOfNotNull(str("video-params/pixelformat"), str("video-params/gamma"), str("video-params/primaries")).joinToString(" · ")
+		if (color.isNotEmpty()) add("Color: $color")
+		add("Decoder: " + (str("hwdec-current")?.takeIf { it != "no" }?.let { "hardware ($it)" } ?: "software"))
+		val audio = listOfNotNull(
+			str("audio-codec-name"),
+			int("audio-params/channel-count")?.let { org.jellyfin.androidtv.ui.playback.overlay.PlaybackInfoFormat.channels(it) },
+			int("audio-params/samplerate")?.let { "${it / 1000} kHz" },
+			if (str("audio-spdif")?.contains(str("audio-codec-name") ?: "-") == true) "passthrough" else null,
+		).joinToString(" · ")
+		if (audio.isNotEmpty()) add("Audio: $audio")
+		val bitrate = (int("video-bitrate") ?: 0) + (int("audio-bitrate") ?: 0)
+		if (bitrate > 0) add(String.format(Locale.US, "Bitrate: %.1f Mbps", bitrate / 1_000_000.0))
+		dbl("demuxer-cache-duration")?.let { add(String.format(Locale.US, "Buffer: %.0f s", it)) }
+		add("Dropped frames: decoder ${int("decoder-frame-drop-count") ?: 0}, output ${int("frame-drop-count") ?: 0}")
+	}
+
 	// --- Tracks ---------------------------------------------------------------------------
 
 	private data class Track(val id: Int, val type: String, val ffIndex: Int?, val external: Boolean, val externalFile: String?, val selected: Boolean)

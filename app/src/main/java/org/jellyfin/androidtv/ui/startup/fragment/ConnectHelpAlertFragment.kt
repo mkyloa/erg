@@ -47,7 +47,7 @@ private fun ConnectHelpAlert(
 	Box(
 		modifier = Modifier.background(colorResource(R.color.not_quite_black))
 	) {
-		ProvideTextStyle(LocalTextStyle.current.copy(color = colorResource(R.color.white))) {
+		ProvideTextStyle(LocalTextStyle.current.copy(color = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.text)) {
 			Row(
 				modifier = Modifier
 					.fillMaxWidth()

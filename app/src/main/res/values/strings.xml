@@ -377,6 +377,7 @@
     <!-- Video Settings -->
     <string name="pref_video">Video</string>
     <string name="lbl_zoom">Zoom</string>
+    <string name="lbl_playback_info">Playback info</string>
     <string name="playback_info">Playback info</string>
     <string name="playback_info_play_method">Play method: %1$s</string>
     <string name="playback_info_direct_play">Directplay</string>
@@ -684,6 +685,7 @@
     <string name="pref_theme_dark">Dark Matter</string>
     <string name="pref_theme_emerald">Green forest</string>
     <string name="pref_theme_gruvbox">Gruvbox</string>
+    <string name="pref_theme_gruvbox_black">Gruvbox Black</string>
     <string name="pref_theme_muted_purple">Light Breeze</string>
     <string name="pref_theme_basic">Basic Dark Low-End</string>
     <string name="pref_theme_flexy">Flexy </string>
@@ -1166,6 +1168,7 @@
     <string name="seerr_setup_needed_caption">Add your Seerr server and sign in to browse and request titles.</string>
     <string name="seerr_open_settings">Open Seerr settings</string>
     <string name="seerr_search_hint">Search movies and shows</string>
+    <string name="search_on_seerr">Search Seerr for “%1$s”</string>
     <string name="seerr_row_trending">Trending</string>
     <string name="seerr_row_popular_movies">Popular movies</string>
     <string name="seerr_row_popular_tv">Popular shows</string>
@@ -1227,6 +1230,12 @@
     <string name="erg_pinned_rows_count">%1$d pinned</string>
     <string name="erg_pinned_none">Nothing pinned yet</string>
     <string name="erg_pin_add">Add</string>
+    <string name="erg_pin_to_home">Pin to home</string>
+    <string name="erg_compact_layout">Compact layout</string>
+    <string name="erg_compact_layout_caption">Smaller cards, so more rows and titles fit on screen</string>
+    <string name="erg_unpin_from_home">Unpin from home</string>
+    <string name="erg_pinned_to_home">“%1$s” pinned to home</string>
+    <string name="erg_unpinned_from_home">“%1$s” removed from home</string>
     <string name="erg_pin_collection">Collection</string>
     <string name="erg_pin_playlist">Playlist</string>
     <string name="erg_pin_genre">Genre</string>
@@ -1244,6 +1253,7 @@
     <string name="erg_update_available">Erg %1$s is available</string>
     <string name="erg_update_install">Update now</string>
     <string name="erg_update_later">Later</string>
+    <string name="erg_update_skip">Skip this version</string>
     <string name="erg_update_check">Check for updates</string>
     <string name="erg_update_checking">Checking…</string>
     <string name="erg_update_up_to_date">You\'re up to date</string>

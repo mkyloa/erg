@@ -139,7 +139,7 @@ class DetailButton @JvmOverloads constructor(
 		val isResumeButton = icon == R.drawable.ic_resume
 
 		val backgroundColor = when {
-			isFocused -> Color.White
+			isFocused -> org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.highlight
 
 			isActivated -> when (icon) {
 				R.drawable.ic_heart ->
@@ -149,17 +149,19 @@ class DetailButton @JvmOverloads constructor(
 					Color(0xFF00FF00).copy(alpha = 0.2f)
 
 				else ->
-					Color.White.copy(alpha = 0.12f)
+					org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.text.copy(alpha = 0.12f)
 			}
 
-			else -> Color.White.copy(alpha = 0.12f)
+			else -> org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.text.copy(alpha = 0.12f)
 		}
 
 		val foregroundColor = when {
-			isFocused -> Color.Black
-			isActivated -> Color.White
-			else -> Color.White.copy(alpha = 0.85f)
+			isFocused -> org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onHighlight
+			isActivated -> org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.text
+			else -> org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.text.copy(alpha = 0.85f)
 		}
+
+		val progressColor = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.text.copy(alpha = 0.3f)
 
 		Box(
 			modifier = Modifier
@@ -169,7 +171,7 @@ class DetailButton @JvmOverloads constructor(
 				.drawBehind {
 					if (isResumeButton && progress > 0f) {
 						drawRect(
-							color = Color.White.copy(alpha = 0.3f),
+							color = progressColor,
 							size = size.copy(
 								width = size.width * progress.coerceIn(0f, 1f)
 							)

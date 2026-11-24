@@ -1,5 +1,7 @@
 package org.jellyfin.androidtv.ui.playback;
 
+import org.jellyfin.androidtv.ui.playback.overlay.PlaybackInfoFormat;
+
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.Color;
@@ -292,6 +294,41 @@ public class VideoManager {
                     .setDeleteAfterDelivery(false)
                     .send();
         }
+    }
+
+    /** Engine details for the playback info overlay. */
+    public @NonNull List<String> getEngineStats() {
+        if (mMpv != null) {
+            List<String> lines = new ArrayList<>();
+            lines.add("Player: mpv");
+            lines.addAll(mMpv.stats());
+            return lines;
+        }
+        List<String> lines = new ArrayList<>();
+        lines.add("Player: ExoPlayer");
+        if (mExoPlayer == null) return lines;
+        androidx.media3.common.Format video = mExoPlayer.getVideoFormat();
+        if (video != null) {
+            lines.add("Video: " + PlaybackInfoFormat.codec(video.sampleMimeType)
+                    + (video.codecs != null ? " (" + video.codecs + ")" : "")
+                    + " · " + video.width + "x" + video.height
+                    + (video.frameRate > 0 ? String.format(java.util.Locale.US, " · %.3f fps", video.frameRate) : ""));
+            lines.add("Color: " + PlaybackInfoFormat.color(video));
+        }
+        androidx.media3.common.Format audio = mExoPlayer.getAudioFormat();
+        if (audio != null) {
+            lines.add("Audio: " + PlaybackInfoFormat.codec(audio.sampleMimeType) + " · " + PlaybackInfoFormat.channels(audio.channelCount)
+                    + (audio.sampleRate > 0 ? " · " + (audio.sampleRate / 1000) + " kHz" : ""));
+        }
+        long bitrate = (video != null && video.bitrate > 0 ? video.bitrate : 0) + (audio != null && audio.bitrate > 0 ? audio.bitrate : 0);
+        if (bitrate > 0) lines.add(String.format(java.util.Locale.US, "Bitrate: %.1f Mbps", bitrate / 1_000_000.0));
+        lines.add(String.format(java.util.Locale.US, "Buffer: %.0f s", Math.max(0, mExoPlayer.getBufferedPosition() - mExoPlayer.getCurrentPosition()) / 1000.0));
+        androidx.media3.exoplayer.DecoderCounters counters = mExoPlayer.getVideoDecoderCounters();
+        if (counters != null) {
+            counters.ensureUpdated();
+            lines.add("Dropped frames: " + counters.droppedBufferCount);
+        }
+        return lines;
     }
 
     private int determineExoPlayerExtensionRendererMode() {

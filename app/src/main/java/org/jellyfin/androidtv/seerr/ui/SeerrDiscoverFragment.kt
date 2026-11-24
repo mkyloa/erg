@@ -19,6 +19,11 @@ import timber.log.Timber
 
 /** Browse and request titles from Seerr. */
 class SeerrDiscoverFragment : Fragment() {
+	companion object {
+		/** Opens Discover with this search already run (from the library search's "Search Seerr"). */
+		const val EXTRA_QUERY = "query"
+	}
+
 	private val viewModel: SeerrDiscoverViewModel by viewModel()
 	private val settingsViewModel: SettingsViewModel by activityViewModel()
 	private val navigationRepository: NavigationRepository by inject()
@@ -28,6 +33,7 @@ class SeerrDiscoverFragment : Fragment() {
 		JellyfinTheme {
 			SeerrDiscoverScreen(
 				viewModel = viewModel,
+				initialQuery = arguments?.getString(EXTRA_QUERY),
 				onOpenSettings = { settingsViewModel.show(Routes.SEERR) },
 				onOpenLibraryItem = { id ->
 					val uuid = id.toUUIDOrNull()

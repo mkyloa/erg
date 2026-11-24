@@ -62,9 +62,11 @@ private val CardShape = RoundedCornerShape(8.dp)
 @Composable
 fun SeerrDiscoverScreen(
 	viewModel: SeerrDiscoverViewModel,
+	initialQuery: String? = null,
 	onOpenSettings: () -> Unit,
 	onOpenLibraryItem: (String) -> Unit,
 ) {
+	LaunchedEffect(initialQuery) { initialQuery?.takeIf { it.isNotBlank() }?.let(viewModel::search) }
 	val state by viewModel.state.collectAsState()
 	val searchResults by viewModel.searchResults.collectAsState()
 	val detail by viewModel.detail.collectAsState()
@@ -102,6 +104,8 @@ fun SeerrDiscoverScreen(
 				rows = current.rows,
 				searchResults = searchResults,
 				searching = searching,
+				detailOpen = detail != null,
+				initialQuery = initialQuery,
 				onSearch = viewModel::search,
 				onSelect = viewModel::openDetail,
 			)
@@ -121,6 +125,7 @@ fun SeerrDiscoverScreen(
 			lastDetail?.let { detailState ->
 				SeerrDetailScreen(
 					state = detailState,
+					trapFocus = detail != null,
 					viewModel = viewModel,
 					onOpenLibraryItem = onOpenLibraryItem,
 				)
@@ -134,13 +139,30 @@ private fun DiscoverContent(
 	rows: List<SeerrRow>,
 	searchResults: List<SeerrResult>?,
 	searching: Boolean,
+	detailOpen: Boolean,
+	initialQuery: String?,
 	onSearch: (String) -> Unit,
 	onSelect: (SeerrResult) -> Unit,
 ) {
-	var query by rememberSaveable { mutableStateOf("") }
+	var query by rememberSaveable { mutableStateOf(initialQuery.orEmpty()) }
 	val firstRowFocus = remember { FocusRequester() }
+	// Arriving with a query: jump to its first result once, then leave focus to the user
+	var focusedInitialResults by rememberSaveable { mutableStateOf(initialQuery.isNullOrBlank()) }
+	LaunchedEffect(searchResults) {
+		if (!focusedInitialResults && !detailOpen && !searchResults.isNullOrEmpty()) {
+			focusedInitialResults = true
+			runCatching { firstRowFocus.requestFocus() }
+		}
+	}
+	// The poster a title page was opened from, so Back lands on it again
+	var lastOpened by rememberSaveable { mutableStateOf<String?>(null) }
+	val returnFocus = remember { FocusRequester() }
+	val select: (String, SeerrResult) -> Unit = { key, item -> lastOpened = key; onSelect(item) }
 
-	LaunchedEffect(Unit) { runCatching { firstRowFocus.requestFocus() } }
+	LaunchedEffect(Unit) { if (!detailOpen) runCatching { firstRowFocus.requestFocus() } }
+	LaunchedEffect(detailOpen) {
+		if (!detailOpen && lastOpened != null) runCatching { returnFocus.requestFocus() }
+	}
 
 	LazyColumn(
 		// Rows run edge to edge so posters scroll off the screen instead of clipping at the inset
@@ -183,9 +205,13 @@ private fun DiscoverContent(
 					Text(stringResource(R.string.seerr_no_results), color = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onBackground.copy(alpha = 0.7f), modifier = Modifier.padding(horizontal = ScreenInset))
 				} else {
 					PosterRow(
+						rowKey = "search",
 						title = stringResource(R.string.seerr_row_search_results),
 						items = searchResults,
-						onSelect = onSelect,
+						onSelect = select,
+						returnKey = lastOpened,
+						returnFocus = returnFocus,
+						firstItemFocus = firstRowFocus,
 					)
 				}
 			}
@@ -194,9 +220,12 @@ private fun DiscoverContent(
 		rows.forEachIndexed { index, row ->
 			item(key = row.key) {
 				PosterRow(
+					rowKey = row.key,
 					title = stringResource(row.title),
 					items = row.items,
-					onSelect = onSelect,
+					onSelect = select,
+					returnKey = lastOpened,
+					returnFocus = returnFocus,
 					firstItemFocus = if (index == 0 && searchResults == null) firstRowFocus else null,
 				)
 			}
@@ -209,9 +238,12 @@ private val ScreenInset = 48.dp
 
 @Composable
 private fun PosterRow(
+	rowKey: String,
 	title: String,
 	items: List<SeerrResult>,
-	onSelect: (SeerrResult) -> Unit,
+	onSelect: (String, SeerrResult) -> Unit,
+	returnKey: String?,
+	returnFocus: FocusRequester,
 	firstItemFocus: FocusRequester? = null,
 ) {
 	Column {
@@ -221,10 +253,14 @@ private fun PosterRow(
 			contentPadding = PaddingValues(vertical = 4.dp, horizontal = ScreenInset),
 		) {
 			items(items, key = { "${it.mediaType}-${it.id}" }) { item ->
+				// The same title can sit in several rows, so the row is part of the key
+				val key = "$rowKey/${item.mediaType}-${item.id}"
 				PosterCard(
 					item = item,
-					onClick = { onSelect(item) },
-					modifier = if (firstItemFocus != null && item == items.first()) Modifier.focusRequester(firstItemFocus) else Modifier,
+					onClick = { onSelect(key, item) },
+					modifier = Modifier
+						.then(if (key == returnKey) Modifier.focusRequester(returnFocus) else Modifier)
+						.then(if (firstItemFocus != null && item == items.first()) Modifier.focusRequester(firstItemFocus) else Modifier),
 				)
 			}
 		}
@@ -286,10 +322,10 @@ private fun PosterCard(
 @Composable
 fun StatusBadge(status: SeerrMediaStatus, modifier: Modifier = Modifier) {
 	val (label, color) = when (status) {
-		SeerrMediaStatus.AVAILABLE -> R.string.seerr_status_available to Color(0xFF22C55E)
-		SeerrMediaStatus.PARTIALLY_AVAILABLE -> R.string.seerr_status_partial to Color(0xFF16A34A)
-		SeerrMediaStatus.PENDING -> R.string.seerr_status_requested to Color(0xFFF59E0B)
-		SeerrMediaStatus.PROCESSING -> R.string.seerr_status_processing to Color(0xFF6366F1)
+		SeerrMediaStatus.AVAILABLE -> R.string.seerr_status_available to org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.success
+		SeerrMediaStatus.PARTIALLY_AVAILABLE -> R.string.seerr_status_partial to org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.successDim
+		SeerrMediaStatus.PENDING -> R.string.seerr_status_requested to org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.warning
+		SeerrMediaStatus.PROCESSING -> R.string.seerr_status_processing to org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.info
 		else -> return
 	}
 	Text(

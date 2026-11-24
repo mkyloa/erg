@@ -27,6 +27,10 @@
 
         <!-- Text colors -->
         <item name="android:textColorPrimary">@color/yellowtown_text_primary</item>
+        <item name="textColorPrimary">@color/yellowtown_text_primary</item>
+        <item name="textColorSecondary">@color/text_secondary</item>
+        <item name="buttonLabelColor">@color/button_default_normal_text</item>
+        <item name="buttonLabelFocusedColor">@color/button_default_highlight_text</item>
         <item name="android:textColorSecondary">@color/white</item>
 
         <!-- Backgrounds and surfaces -->

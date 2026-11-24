@@ -25,9 +25,9 @@ fun Badge(
 	ProvideTextStyle(JellyfinTheme.typography.badge.copy(color = contentColor)) {
 		Box(
 			modifier = modifier
-				.defaultMinSize(minWidth = 24.dp, minHeight = 24.dp)
+				.defaultMinSize(minWidth = 18.dp, minHeight = 18.dp)
 				.background(containerColor, shape)
-				.padding(Tokens.Space.spaceXs),
+				.padding(horizontal = 5.dp, vertical = 1.dp),
 			contentAlignment = Alignment.Center,
 		) {
 			content()

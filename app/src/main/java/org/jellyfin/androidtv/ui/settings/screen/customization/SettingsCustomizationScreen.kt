@@ -53,6 +53,17 @@ fun SettingsCustomizationScreen() {
 		}
 
 		item {
+			var compactLayout by rememberPreference(userPreferences, UserPreferences.compactLayout)
+			ListButton(
+				headingContent = { Text(stringResource(R.string.erg_compact_layout)) },
+				captionContent = { Text(stringResource(R.string.erg_compact_layout_caption)) },
+				trailingContent = { Checkbox(checked = compactLayout) },
+				onClick = { compactLayout = !compactLayout },
+				modifier = Modifier.focusKey("erg_compact_layout")
+			)
+		}
+
+		item {
 			var clockBehavior by rememberPreference(userPreferences, UserPreferences.clockBehavior)
 
 			ListButton(

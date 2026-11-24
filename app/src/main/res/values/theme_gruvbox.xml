@@ -36,6 +36,12 @@
         <!-- Text colors -->
         <item name="textColorPrimary">@color/gruvbox_fg</item>
         <item name="textColorSecondary">@color/gruvbox_fg4</item>
+        <item name="android:textColor">@color/gruvbox_fg</item>
+        <item name="android:textColorPrimary">@color/gruvbox_fg</item>
+        <item name="android:textColorSecondary">@color/gruvbox_fg4</item>
+        <item name="android:textColorHint">@color/gruvbox_gray</item>
+        <item name="buttonLabelColor">@color/gruvbox_fg2</item>
+        <item name="buttonLabelFocusedColor">@color/gruvbox_fg</item>
         <item name="headerTextColor">@color/gruvbox_fg</item>
         <item name="defaultSearchColor">@color/gruvbox_fg</item>
 
@@ -95,6 +101,12 @@
         <item name="tile_port_guide_bg">@color/gruvbox_bg1</item>
         <item name="tile_port_series_timer_bg">@color/gruvbox_bg1</item>
 
+        <!-- Player controls (leanback) -->
+        <item name="playbackControlsIconHighlightColor">@color/gruvbox_fg</item>
+        <item name="playbackProgressPrimaryColor">@color/gruvbox_yellow</item>
+        <item name="playbackProgressSecondaryColor">@color/gruvbox_bg3</item>
+        <item name="playbackControlsTimeStyle">@style/Gruvbox.PlaybackTime</item>
+
         <!-- Focus Border Color -->
         <item name="focusBorderColor">@color/gruvbox_fg</item>
 
@@ -123,6 +135,23 @@
         <item name="android:popupWindowStyle">@style/PopupWindow</item>
         <item name="android:datePickerStyle">@style/DatePickerCustom</item>
         <item name="rowHeaderStyle">@style/Widget.Jellyfin.Row.Header</item>
+    </style>
+
+    <style name="Gruvbox.PlaybackTime" parent="Widget.Leanback.PlaybackControlsTimeStyle">
+        <item name="android:textColor">@color/gruvbox_fg4</item>
+    </style>
+
+    <!-- Gruvbox Black: the same theme on a pure black background (OLED) -->
+    <style name="Theme.Jellyfin.Gruvbox.Black" parent="Theme.Jellyfin.Gruvbox">
+        <item name="colorPrimary">@color/black</item>
+        <item name="colorPrimaryDark">@color/black</item>
+        <item name="android:colorPrimary">@color/black</item>
+        <item name="android:colorPrimaryDark">@color/black</item>
+        <item name="android:windowBackground">@color/black</item>
+        <item name="android:statusBarColor">@color/black</item>
+        <item name="android:navigationBarColor">@color/black</item>
+        <item name="backdrop_fading_color">@color/black</item>
+        <item name="defaultBackground">@color/black</item>
     </style>
 
     <!-- Preferences theme -->

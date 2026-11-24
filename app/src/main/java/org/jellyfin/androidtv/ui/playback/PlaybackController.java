@@ -216,6 +216,11 @@ public class PlaybackController implements PlaybackControllerNotifiable {
         }
     }
 
+    /** Engine details for the playback info overlay. */
+    public java.util.List<String> getEngineStats() {
+        return mVideoManager != null ? mVideoManager.getEngineStats() : java.util.Collections.emptyList();
+    }
+
     public StreamInfo getCurrentStreamInfo() {
         return mCurrentStreamInfo;
     }

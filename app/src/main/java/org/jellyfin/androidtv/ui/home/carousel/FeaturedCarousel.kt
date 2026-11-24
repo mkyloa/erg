@@ -380,7 +380,7 @@ private fun BoxScope.CarouselIndicator(
 	Box(
 		modifier = modifier
 			.padding(16.dp)
-			.background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
+			.background(org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.text.copy(alpha = 0.1f))
 			.graphicsLayer {
 				clip = true
 				shape = ShapeDefaults.ExtraSmall
@@ -393,6 +393,14 @@ private fun BoxScope.CarouselIndicator(
 				.padding(8.dp),
 			itemCount = itemCount,
 			activeItemIndex = activeItemIndex,
+			indicator = { isActive ->
+				val dot = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.text
+				Box(
+					Modifier
+						.size(8.dp)
+						.background(if (isActive) dot else dot.copy(alpha = 0.35f), androidx.compose.foundation.shape.CircleShape)
+				)
+			},
 		)
 	}
 }
@@ -443,7 +451,7 @@ private fun CarouselItemForeground(
 					),
 					maxLines = 2,
 					overflow = TextOverflow.Ellipsis,
-					color = Color.White,
+					color = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.text,
 					modifier = Modifier.fillMaxWidth(0.465f)
 
 				)
@@ -473,7 +481,7 @@ private fun CarouselItemForeground(
 						text = yearAndRuntime,
 						style = MaterialTheme.typography.titleMedium.copy(
 							fontSize = 16.sp,
-							color = Color.White.copy(alpha = 0.8f)
+							color = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.text.copy(alpha = 0.8f)
 						)
 					)
 				}
@@ -486,7 +494,7 @@ private fun CarouselItemForeground(
 								text = " • ",
 								style = MaterialTheme.typography.titleMedium.copy(
 									fontSize = 16.sp,
-									color = Color.White.copy(alpha = 0.8f)
+									color = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.text.copy(alpha = 0.8f)
 								)
 							)
 						}
@@ -505,7 +513,7 @@ private fun CarouselItemForeground(
 								text = String.format("%.1f", communityRating),
 								style = MaterialTheme.typography.titleMedium.copy(
 									fontSize = 16.sp,
-									color = Color.White.copy(alpha = 0.8f)
+									color = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.text.copy(alpha = 0.8f)
 								)
 							)
 						}
@@ -519,7 +527,7 @@ private fun CarouselItemForeground(
 								text = " • ",
 								style = MaterialTheme.typography.titleMedium.copy(
 									fontSize = 16.sp,
-									color = Color.White.copy(alpha = 0.8f)
+									color = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.text.copy(alpha = 0.8f)
 								)
 							)
 						}
@@ -543,7 +551,7 @@ private fun CarouselItemForeground(
 								text = "${String.format("%.0f", criticRating)}%",
 								style = MaterialTheme.typography.titleMedium.copy(
 									fontSize = 16.sp,
-									color = Color.White.copy(alpha = 0.8f)
+									color = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.text.copy(alpha = 0.8f)
 								)
 							)
 						}
@@ -557,7 +565,7 @@ private fun CarouselItemForeground(
 								text = " • ",
 								style = MaterialTheme.typography.titleMedium.copy(
 									fontSize = 16.sp,
-									color = Color.White.copy(alpha = 0.8f)
+									color = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.text.copy(alpha = 0.8f)
 								)
 							)
 						}
@@ -565,7 +573,7 @@ private fun CarouselItemForeground(
 							text = parentalRating,
 							style = MaterialTheme.typography.titleMedium.copy(
 								fontSize = 16.sp,
-								color = Color.White.copy(alpha = 0.8f),
+								color = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.text.copy(alpha = 0.8f),
 								fontWeight = FontWeight.Normal
 							)
 						)
@@ -578,7 +586,7 @@ private fun CarouselItemForeground(
 					text = item.description,
 					style = MaterialTheme.typography.titleMedium.copy(
 						fontSize = 14.sp,
-						color = Color.White.copy(alpha = 0.9f),
+						color = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.text.copy(alpha = 0.9f),
 						shadow = Shadow(
 							color = Color.Black.copy(alpha = 0.7f),
 							offset = Offset(x = 2f, y = 4f),
@@ -664,9 +672,10 @@ private fun WatchNowButton(onItemSelected: () -> Unit) {
 		),
 		shape = ButtonDefaults.shape(shape = RoundedCornerShape(14.dp)),
 		colors = ButtonDefaults.colors(
-			containerColor = Color(0xFFFFFFFF).copy(alpha = 0.8f),
-			contentColor = Color.Black,
-			focusedContentColor = Color.White.copy(alpha = 0.7f),
+			containerColor = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.highlight.copy(alpha = 0.8f),
+			contentColor = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onHighlight,
+			focusedContainerColor = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.highlight,
+			focusedContentColor = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onHighlight,
 		),
 		scale = ButtonDefaults.scale(scale = 0.85f),
 		glow = ButtonDefaults.glow()

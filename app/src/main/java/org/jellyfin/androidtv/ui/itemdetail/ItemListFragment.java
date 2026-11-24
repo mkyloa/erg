@@ -37,6 +37,7 @@ import org.jellyfin.androidtv.ui.ItemListView;
 import org.jellyfin.androidtv.ui.ItemListViewHelperKt;
 import org.jellyfin.androidtv.ui.ItemRowView;
 import org.jellyfin.androidtv.ui.TextUnderButton;
+import org.jellyfin.androidtv.ui.home.PinToHome;
 import org.jellyfin.androidtv.ui.itemhandling.BaseItemDtoBaseRowItem;
 import org.jellyfin.androidtv.ui.itemhandling.ItemLauncher;
 import org.jellyfin.androidtv.ui.navigation.Destinations;
@@ -617,6 +618,16 @@ public class ItemListFragment extends Fragment implements View.OnKeyListener {
         fav.setOnFocusChangeListener((v, hasFocus) -> {
             if (hasFocus) mScrollView.smoothScrollTo(0, 0);
         });
+
+        if (PinToHome.canPin(mBaseItem)) {
+            TextUnderButton pin = TextUnderButton.create(requireContext(), R.drawable.ic_pin, buttonSize, 2,
+                getString(R.string.erg_pin_to_home), v -> v.setActivated(PinToHome.toggle(requireContext(), mBaseItem)));
+            pin.setActivated(PinToHome.isPinned(mBaseItem));
+            mButtonRow.addView(pin);
+            pin.setOnFocusChangeListener((v, hasFocus) -> {
+                if (hasFocus) mScrollView.smoothScrollTo(0, 0);
+            });
+        }
 
         addSortButton(buttonSize);
 

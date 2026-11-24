@@ -264,6 +264,8 @@ class HomeFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        if (!useClassicLayout) setupHeroCollapse()
+
         view.isFocusableInTouchMode = false
         view.isClickable = false
 
@@ -402,7 +404,7 @@ class HomeFragment : Fragment() {
                                 )
                                 .border(
                                     width = 1.dp,
-                                    color = Color.White,
+                                    color = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.text,
                                     shape = RoundedCornerShape(6.dp)
                                 )
                                 .padding(horizontal = 20.dp, vertical = 16.dp)
@@ -413,7 +415,7 @@ class HomeFragment : Fragment() {
                                     fontSize = 18.sp,
                                     fontWeight = FontWeight.Bold
                                 ),
-                                color = Color.White,
+                                color = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.text,
                                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
                             )
                         }
@@ -485,5 +487,69 @@ class HomeFragment : Fragment() {
 
             }
         }
+    }
+
+    // Erg: the hero takes half the screen, leaving room for one row. Once focus moves past the
+    // first row it slides away and the rows take the space; back on the first row it returns.
+    private var heroCollapsed = false
+    private var expandedRowsHeight = 0
+
+    private fun setupHeroCollapse() {
+        val root = modernBinding.root
+        val rows = modernBinding.contentView
+        val hero = modernBinding.carouselContainer ?: return
+        val listener = android.view.ViewTreeObserver.OnGlobalFocusChangeListener { _, newFocus ->
+            if (newFocus == null || _modernBinding == null) return@OnGlobalFocusChangeListener
+            val inRows = generateSequence(newFocus as View?) { it.parent as? View }.any { it === rows }
+            val inHero = !inRows && generateSequence(newFocus as View?) { it.parent as? View }.any { it === hero }
+            val position = (childFragmentManager.findFragmentById(rows.id) as? HomeRowsFragment)?.selectedPosition ?: 0
+            when {
+                inRows && position > 0 -> setHeroCollapsed(true)
+                inRows || inHero -> setHeroCollapsed(false)
+            }
+        }
+        root.viewTreeObserver.addOnGlobalFocusChangeListener(listener)
+        viewLifecycleOwner.lifecycle.addObserver(object : androidx.lifecycle.DefaultLifecycleObserver {
+            override fun onDestroy(owner: androidx.lifecycle.LifecycleOwner) {
+                if (root.viewTreeObserver.isAlive) root.viewTreeObserver.removeOnGlobalFocusChangeListener(listener)
+            }
+        })
+    }
+
+    private fun setHeroCollapsed(collapsed: Boolean) {
+        if (collapsed == heroCollapsed) return
+        heroCollapsed = collapsed
+        val binding = _modernBinding ?: return
+        val hero = binding.carouselContainer ?: return
+        val rows = binding.contentView
+        val root = binding.root as ViewGroup
+        if (expandedRowsHeight == 0) expandedRowsHeight = rows.layoutParams.height
+
+        android.transition.TransitionManager.beginDelayedTransition(
+            root,
+            android.transition.TransitionSet()
+                .addTransition(android.transition.ChangeBounds())
+                .addTransition(android.transition.Fade())
+                .setDuration(220)
+                .addListener(object : android.transition.TransitionListenerAdapter() {
+                    override fun onTransitionEnd(transition: android.transition.Transition) = alignSelectedRow()
+                }),
+        )
+        hero.visibility = if (collapsed) View.GONE else View.VISIBLE
+        rows.layoutParams = rows.layoutParams.apply {
+            // Everything under the toolbar
+            height = if (collapsed) root.height - (64 * resources.displayMetrics.density).toInt() else expandedRowsHeight
+        }
+        _isCarouselPaused.value = collapsed
+    }
+
+    // The resize animation suppresses the rows' layout, which cancels leanback's scroll to the newly
+    // selected row; without this, moving up to the first row left it scrolled out of view.
+    private fun alignSelectedRow() {
+        val rows = _modernBinding?.contentView ?: return
+        val grid = (childFragmentManager.findFragmentById(rows.id) as? HomeRowsFragment)?.verticalGridView ?: return
+        val row = grid.layoutManager?.findViewByPosition(grid.selectedPosition) ?: return
+        val offset = row.top - (HomeRowsFragment.ROW_ALIGNMENT_DP * resources.displayMetrics.density).toInt()
+        if (offset != 0) grid.smoothScrollBy(0, offset)
     }
 }

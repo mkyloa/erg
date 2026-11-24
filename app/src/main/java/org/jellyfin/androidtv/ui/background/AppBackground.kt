@@ -33,6 +33,8 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
@@ -254,7 +256,10 @@ fun AppBackground() {
 	val secondaryGradientColor = if (backdropDynamicColors) animatedSecondaryColor else Color.Transparent
 	val tertiaryGradientColor = if (backdropDynamicColors) animatedTertiaryColor else Color.Transparent
 
-	Box(modifier = Modifier.fillMaxSize()) {
+	// Erg: render the whole backdrop into one cached layer. It is a full-screen fill, up to three
+	// full-screen radial gradients and a faded image drawn through an offscreen layer; repainting
+	// all of that on every frame cost ~25ms of GPU time per frame on the detail page.
+	Box(modifier = Modifier.fillMaxSize().graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }) {
 		if (displayBackground != null) {
 			Box(modifier = Modifier.fillMaxSize()) {
 				Box(

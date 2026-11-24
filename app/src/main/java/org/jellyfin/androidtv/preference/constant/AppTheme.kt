@@ -12,6 +12,9 @@ enum class AppTheme(
 	/** Gruvbox dark: warm retro palette (Erg default) */
 	GRUVBOX(R.string.pref_theme_gruvbox),
 
+	/** Gruvbox with a pure black background, for OLED screens */
+	GRUVBOX_BLACK(R.string.pref_theme_gruvbox_black),
+
 	PURPLE_HAZE(R.string.pref_theme_purple_haze),
 	/**
 	 * The default OLED Dark theme based on https://github.com/LitCastVlog/jellyfin-androidtv-OLED fork theme

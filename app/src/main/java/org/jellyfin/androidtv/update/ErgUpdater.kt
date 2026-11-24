@@ -107,7 +107,13 @@ class ErgUpdater(private val context: Context) {
 		}
 	}
 
+	/** "Later": hide the prompt; the next automatic check (at most every 12 hours) offers it again. */
 	fun dismiss() {
+		_state.value = State.Idle
+	}
+
+	/** "Skip this version": automatic checks stay quiet until a newer release comes out. */
+	fun skip() {
 		val current = _state.value
 		if (current is State.Available) prefs.edit { putString(KEY_DISMISSED, current.release.version) }
 		_state.value = State.Idle
@@ -207,6 +213,26 @@ class ErgUpdater(private val context: Context) {
 		private const val KEY_LAST_CHECK = "last_check"
 		private const val KEY_DISMISSED = "dismissed_version"
 		private const val CHECK_INTERVAL_MS = 12 * 60 * 60 * 1000L
+
+		/**
+		 * Release notes as plain text for the TV: drops the "Erg x.y.z" title line, markdown headings
+		 * and emphasis, links, and GitHub's "by @user in <url>" / "Full Changelog" lines.
+		 */
+		fun readableNotes(body: String?): String? = body
+			?.lines()
+			?.map { it.trim() }
+			?.filterNot { it.startsWith("**Full Changelog**") || it.matches(Regex("^Erg v?\\d.*")) || it.startsWith("<!--") }
+			?.map { line ->
+				line.replace(Regex("^#+\\s*"), "")
+					.replace(Regex("^[*-]\\s+"), "• ")
+					.replace(Regex("\\s+by @\\S+ in https?://\\S+"), "")
+					.replace(Regex("\\[([^]]+)]\\([^)]+\\)"), "$1")
+					.replace(Regex("\\*\\*|__|`"), "")
+			}
+			?.joinToString("\n")
+			?.replace(Regex("\n{3,}"), "\n\n")
+			?.trim()
+			?.takeIf { it.isNotEmpty() }
 
 		/** True when [candidate] is a newer semantic version than [current] (pre-releases sort lower). */
 		fun isNewer(candidate: String, current: String): Boolean = compareVersions(candidate, current) > 0

@@ -64,6 +64,11 @@ class UserPreferences(context: Context) : SharedPreferenceStore(
 		var appTheme = enumPreference("app_theme", AppTheme.GRUVBOX)
 
 		/**
+		 * Erg: smaller cards so more fit on screen
+		 */
+		var compactLayout = booleanPreference("erg_compact_layout", false)
+
+		/**
 		 * Behavior of app background while browsing
 		 */
 		var backdropBehavior = enumPreference("backdrop_behavior", BackdropBehavior.BACKDROP_WITH_BLUR)
@@ -390,6 +395,9 @@ class UserPreferences(context: Context) : SharedPreferenceStore(
 			defaultValue = mapOf(
 				MediaSegmentType.INTRO to MediaSegmentAction.ASK_TO_SKIP,
 				MediaSegmentType.OUTRO to MediaSegmentAction.ASK_TO_SKIP,
+				// Erg: recaps and next-episode previews get the same offer
+				MediaSegmentType.RECAP to MediaSegmentAction.ASK_TO_SKIP,
+				MediaSegmentType.PREVIEW to MediaSegmentAction.ASK_TO_SKIP,
 			).toMediaSegmentActionsString()
 		)
 
