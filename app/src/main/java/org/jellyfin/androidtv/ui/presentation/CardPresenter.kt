@@ -311,6 +311,7 @@ private fun CardViewHolderContent(
 	} * scale
 
 	val usePreview = displayConfig.overrideShowInfo ?: showInfo
+	val cardShape = org.jellyfin.androidtv.ui.composable.item.rememberCardShape()
 
 	// Erg focus ring: fades in/out instead of snapping
 	val ringAlpha by androidx.compose.animation.core.animateFloatAsState(
@@ -386,10 +387,11 @@ private fun CardViewHolderContent(
 					)
 				}
 			},
+			shape = cardShape,
 			modifier = Modifier
 				.size(size)
 				// Erg: flat cards, white focus ring instead of zoom/dim
-				.then(if (ringAlpha > 0f) Modifier.border(2.dp, JellyfinTheme.colorScheme.onBackground.copy(alpha = ringAlpha), JellyfinTheme.shapes.medium) else Modifier)
+				.then(if (ringAlpha > 0f) Modifier.border(2.dp, JellyfinTheme.colorScheme.onBackground.copy(alpha = ringAlpha), cardShape) else Modifier)
 		)
 	}
 

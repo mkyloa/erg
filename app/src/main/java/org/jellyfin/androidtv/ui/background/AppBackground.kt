@@ -33,6 +33,12 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.RadialGradientShader
+import androidx.compose.ui.graphics.Paint
+import androidx.compose.ui.graphics.FilterQuality
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.ImageBitmap
@@ -256,47 +262,26 @@ fun AppBackground() {
 	val secondaryGradientColor = if (backdropDynamicColors) animatedSecondaryColor else Color.Transparent
 	val tertiaryGradientColor = if (backdropDynamicColors) animatedTertiaryColor else Color.Transparent
 
-	// Erg: render the whole backdrop into one cached layer. It is a full-screen fill, up to three
-	// full-screen radial gradients and a faded image drawn through an offscreen layer; repainting
-	// all of that on every frame cost ~25ms of GPU time per frame on the detail page.
-	Box(modifier = Modifier.fillMaxSize().graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }) {
+	// Erg: the color wash is painted into a tiny bitmap and stretched (see drawColorWash), and the
+	// faded image sits in its own cached layer. Drawing a full-screen fill, three full-screen radial
+	// gradients and the image layer on every frame cost ~25ms of GPU time per frame on TV hardware,
+	// and the colors animate after every selection change on browse screens.
+	val washBitmap = remember { ImageBitmap(WASH_WIDTH, WASH_HEIGHT) }
+	Box(modifier = Modifier.fillMaxSize()) {
 		if (displayBackground != null) {
 			Box(modifier = Modifier.fillMaxSize()) {
 				Box(
 					modifier = Modifier
 						.fillMaxSize()
 						.drawBehind {
-							drawRect(color = fadingColor)
-
-							if (secondaryGradientColor != Color.Transparent && backdropFadingIntensity > 0) {
-								drawRect(
-									brush = Brush.radialGradient(
-										colors = listOf(secondaryGradientColor, Color.Transparent),
-										center = androidx.compose.ui.geometry.Offset(0f, 0f),
-										radius = size.width * 0.4f,
-									)
-								)
-							}
-
-							if (primaryGradientColor != Color.Transparent && backdropFadingIntensity > 0) {
-								drawRect(
-									brush = Brush.radialGradient(
-										colors = listOf(primaryGradientColor, Color.Transparent),
-										center = androidx.compose.ui.geometry.Offset(size.width, size.height),
-										radius = size.width * 0.4f,
-									)
-								)
-							}
-
-							if (tertiaryGradientColor != Color.Transparent && backdropFadingIntensity > 0) {
-								drawRect(
-									brush = Brush.radialGradient(
-										colors = listOf(tertiaryGradientColor, Color.Transparent),
-										center = androidx.compose.ui.geometry.Offset(size.width, 0f),
-										radius = size.width * 0.4f,
-									)
-								)
-							}
+							val gradients = backdropFadingIntensity > 0
+							drawColorWash(
+								bitmap = washBitmap,
+								fill = fadingColor,
+								topLeft = if (gradients) secondaryGradientColor else Color.Transparent,
+								bottomRight = if (gradients) primaryGradientColor else Color.Transparent,
+								topRight = if (gradients) tertiaryGradientColor else Color.Transparent,
+							)
 						}
 				)
 
@@ -326,7 +311,11 @@ fun AppBackground() {
 										contentScale = ContentScale.Crop,
 										modifier = Modifier
 											.fillMaxSize()
-											.alpha(0.95f)
+											// Own cached layer: the fade below is only redrawn when the image changes
+											.graphicsLayer {
+												alpha = 0.95f
+												compositingStrategy = CompositingStrategy.Offscreen
+											}
 											.drawWithContent {
 												drawContent()
 												if (backdropFadingIntensity > 0) { // More is less & less is more here
@@ -367,4 +356,41 @@ fun AppBackground() {
 			)
 		}
 	}
+}
+
+private const val WASH_WIDTH = 96
+private const val WASH_HEIGHT = 54
+
+/**
+ * Paints the backdrop color wash (a fill plus soft radial glows from three corners) into a tiny
+ * bitmap on the CPU and stretches it over the screen. The glows are smooth, so bilinear scaling
+ * looks the same as drawing them full size, at a fraction of the GPU cost.
+ */
+private fun DrawScope.drawColorWash(bitmap: ImageBitmap, fill: Color, topLeft: Color, bottomRight: Color, topRight: Color) {
+	if (topLeft == Color.Transparent && bottomRight == Color.Transparent && topRight == Color.Transparent) {
+		drawRect(fill)
+		return
+	}
+
+	val w = bitmap.width.toFloat()
+	val h = bitmap.height.toFloat()
+	val radius = w * 0.4f
+	val canvas = androidx.compose.ui.graphics.Canvas(bitmap)
+	val paint = Paint()
+	paint.blendMode = BlendMode.Src
+	paint.color = fill
+	canvas.drawRect(0f, 0f, w, h, paint)
+	paint.blendMode = BlendMode.SrcOver
+	for ((color, center) in listOf(topLeft to Offset(0f, 0f), bottomRight to Offset(w, h), topRight to Offset(w, 0f))) {
+		if (color == Color.Transparent) continue
+		paint.color = Color.Black
+		paint.shader = RadialGradientShader(center, radius, listOf(color, Color.Transparent))
+		canvas.drawRect(0f, 0f, w, h, paint)
+	}
+
+	drawImage(
+		image = bitmap,
+		dstSize = IntSize(size.width.toInt(), size.height.toInt()),
+		filterQuality = FilterQuality.Low,
+	)
 }

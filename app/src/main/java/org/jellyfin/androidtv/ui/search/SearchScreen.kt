@@ -544,6 +544,7 @@ private fun SearchItemCard(
 	val context = LocalContext.current
 	val imageHelper: ImageHelper by (context as FragmentActivity).inject()
 	var isCardFocused by remember { mutableStateOf(false) }
+	val cardShape = org.jellyfin.androidtv.ui.composable.item.rememberCardShape()
 
 	val (cardWidth, cardHeight) = when (item.type) {
 		org.jellyfin.sdk.model.api.BaseItemKind.EPISODE -> Pair(220, 110)
@@ -580,9 +581,9 @@ private fun SearchItemCard(
 					} else {
 						org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.text.copy(alpha = 0.2f)
 					},
-					shape = RoundedCornerShape(3.dp)
+					shape = cardShape
 				)
-				.clip(RoundedCornerShape(2.dp))
+				.clip(cardShape)
 				.clickable { onClick() }
 		) {
 			AsyncImage(

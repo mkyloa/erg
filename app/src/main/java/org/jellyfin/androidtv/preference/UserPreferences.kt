@@ -68,6 +68,9 @@ class UserPreferences(context: Context) : SharedPreferenceStore(
 		 */
 		var compactLayout = booleanPreference("erg_compact_layout", false)
 
+		/** Erg: corner radius of poster and thumbnail cards */
+		var cardCorners = enumPreference("erg_card_corners", org.jellyfin.androidtv.preference.constant.CardCorners.LARGE)
+
 		/**
 		 * Behavior of app background while browsing
 		 */

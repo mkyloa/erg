@@ -1233,6 +1233,11 @@
     <string name="erg_pin_to_home">Pin to home</string>
     <string name="erg_compact_layout">Compact layout</string>
     <string name="erg_compact_layout_caption">Smaller cards, so more rows and titles fit on screen</string>
+    <string name="erg_card_corners">Card corners</string>
+    <string name="erg_card_corners_square">Square</string>
+    <string name="erg_card_corners_small">Small</string>
+    <string name="erg_card_corners_medium">Medium</string>
+    <string name="erg_card_corners_large">Large</string>
     <string name="erg_unpin_from_home">Unpin from home</string>
     <string name="erg_pinned_to_home">“%1$s” pinned to home</string>
     <string name="erg_unpinned_from_home">“%1$s” removed from home</string>

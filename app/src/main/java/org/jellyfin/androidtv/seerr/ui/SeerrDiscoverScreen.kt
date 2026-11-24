@@ -57,7 +57,6 @@ import org.jellyfin.androidtv.ui.base.button.Button
 
 private val PosterWidth = 132.dp
 private val PosterHeight = 198.dp
-private val CardShape = RoundedCornerShape(8.dp)
 
 @Composable
 fun SeerrDiscoverScreen(
@@ -273,6 +272,7 @@ private fun PosterCard(
 	onClick: () -> Unit,
 	modifier: Modifier = Modifier,
 ) {
+	val cardShape = org.jellyfin.androidtv.ui.composable.item.rememberCardShape()
 	val interaction = remember { MutableInteractionSource() }
 	val focused by interaction.collectIsFocusedAsState()
 	val ringAlpha by androidx.compose.animation.core.animateFloatAsState(
@@ -285,9 +285,9 @@ private fun PosterCard(
 		Box(
 			Modifier
 				.size(PosterWidth, PosterHeight)
-				.clip(CardShape)
-				.background(org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onBackground.copy(alpha = 0.08f), CardShape)
-				.then(if (ringAlpha > 0f) Modifier.border(2.dp, org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onBackground.copy(alpha = ringAlpha), CardShape) else Modifier)
+				.clip(cardShape)
+				.background(org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onBackground.copy(alpha = 0.08f), cardShape)
+				.then(if (ringAlpha > 0f) Modifier.border(2.dp, org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onBackground.copy(alpha = ringAlpha), cardShape) else Modifier)
 				.clickable(interactionSource = interaction, indication = null, onClick = onClick)
 				.focusable(interactionSource = interaction)
 		) {
@@ -296,7 +296,7 @@ private fun PosterCard(
 				SeerrImage(
 					url = poster,
 					contentDescription = item.displayTitle,
-					shape = CardShape,
+					shape = cardShape,
 					modifier = Modifier.fillMaxSize(),
 				)
 			} else {

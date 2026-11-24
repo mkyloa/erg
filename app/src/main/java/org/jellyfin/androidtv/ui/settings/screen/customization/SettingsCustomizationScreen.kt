@@ -64,6 +64,17 @@ fun SettingsCustomizationScreen() {
 		}
 
 		item {
+			var cardCorners by rememberPreference(userPreferences, UserPreferences.cardCorners)
+
+			ListButton(
+				headingContent = { Text(stringResource(R.string.erg_card_corners)) },
+				captionContent = { Text(stringResource(cardCorners.nameRes)) },
+				onClick = { router.push(Routes.CUSTOMIZATION_CARD_CORNERS) },
+				modifier = Modifier.focusKey(Routes.CUSTOMIZATION_CARD_CORNERS)
+			)
+		}
+
+		item {
 			var clockBehavior by rememberPreference(userPreferences, UserPreferences.clockBehavior)
 
 			ListButton(
