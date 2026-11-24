@@ -33,6 +33,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -95,13 +99,25 @@ fun HomeToolbar(
     val showLiveTvButton = userSettingPreferences.get(userSettingPreferences.showLiveTvButton)
     val showMasksButton = userSettingPreferences.get(userSettingPreferences.showRandomButton)
 
+    // Erg: centered on its resting width (icons plus library tabs). Focused buttons widen into
+    // labeled pills; they grow to the right instead of re-centering and shifting the whole bar.
+    val restingWidth = remember { IntArray(1) }
+    var barFocused by remember { mutableStateOf(false) }
     Box(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .onFocusChanged { barFocused = it.hasFocus }
     ) {
         // Icons row
         Row(
             modifier = Modifier
-                .offset(x = 25.dp)
+                .layout { measurable, constraints ->
+                    val placeable = measurable.measure(constraints.copy(minWidth = 0))
+                    if (!barFocused || restingWidth[0] == 0) restingWidth[0] = placeable.width
+                    layout(constraints.maxWidth, placeable.height) {
+                        placeable.place(((constraints.maxWidth - restingWidth[0]) / 2).coerceAtLeast(0), 0)
+                    }
+                }
                 .padding(top = 14.dp) // Move down
                 .wrapContentWidth(Alignment.Start),
             horizontalArrangement = Arrangement.spacedBy(7.5.dp),
@@ -321,6 +337,9 @@ fun HomeToolbar(
                 }
             }
 
+
+            // Erg: library tabs (Movies, Shows, Collections, ...)
+            LibraryTabs()
 
             // Live TV Button - Only show if enabled in preferences
             if (showLiveTvButton) {

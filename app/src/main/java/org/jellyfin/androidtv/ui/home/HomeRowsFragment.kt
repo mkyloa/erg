@@ -129,6 +129,8 @@ class HomeRowsFragment : RowsSupportFragment(), AudioEventListener, View.OnKeyLi
 				userViewsRepository.views.first()
 			}
 
+			val classicLayout = userSettingPreferences[userSettingPreferences.useClassicHomeScreen]
+
 			// Load all home sections in parallel for better performance
 			val sectionRows = homesections.map { section ->
 				async(Dispatchers.IO) {
@@ -137,8 +139,9 @@ class HomeRowsFragment : RowsSupportFragment(), AudioEventListener, View.OnKeyLi
 							val views = userViewsDeferred.await()
 							helper.loadRecentlyAdded(views)
 						}
-						HomeSectionType.LIBRARY_TILES_SMALL -> HomeFragmentViewsRow(small = false)
-						HomeSectionType.LIBRARY_BUTTONS -> HomeFragmentViewsRow(small = true)
+						// Erg: the modern home screen shows libraries as tabs in the top bar instead
+						HomeSectionType.LIBRARY_TILES_SMALL -> if (classicLayout) HomeFragmentViewsRow(small = false) else null
+						HomeSectionType.LIBRARY_BUTTONS -> if (classicLayout) HomeFragmentViewsRow(small = true) else null
 						HomeSectionType.RESUME -> helper.loadResumeVideoLandscape()
 						HomeSectionType.RESUME_AUDIO -> helper.loadResumeAudio()
 						HomeSectionType.RESUME_BOOK -> null // Books are not (yet) supported
