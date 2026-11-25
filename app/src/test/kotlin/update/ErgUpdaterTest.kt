@@ -10,6 +10,9 @@ class ErgUpdaterTest : FunSpec({
 		ErgUpdater.isNewer("0.1.0", "0.1.0") shouldBe false
 		ErgUpdater.isNewer("0.1.0", "0.1.0-beta.1") shouldBe true
 		ErgUpdater.isNewer("0.1.0-beta.1", "0.1.0") shouldBe false
+		ErgUpdater.isNewer("0.1.0-rc.10", "0.1.0-rc.9") shouldBe true
+		ErgUpdater.isNewer("0.1.0-rc.2", "0.1.0-rc.10") shouldBe false
+		ErgUpdater.isNewer("0.1.0-rc.1", "0.1.0-beta.5") shouldBe true
 	}
 
 	test("GitHub generated notes become plain text") {

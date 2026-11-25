@@ -2,7 +2,6 @@ package org.jellyfin.androidtv.ui.search
 
 import androidx.compose.ui.res.painterResource
 import android.content.Context
-import android.view.inputmethod.InputMethodManager
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -58,6 +57,7 @@ import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
@@ -112,15 +112,10 @@ fun SearchScreen(
 		onVoiceSearch()
 	}
 
-	val showKeyboard: () -> Unit = {
-		val imm = context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-		imm.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0)
-	}
-
-	val hideKeyboard: () -> Unit = {
-		val imm = context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-		imm.hideSoftInputFromWindow(null, 0)
-	}
+	// toggleSoftInput toggled rather than showed, and hiding from a null window did nothing
+	val keyboard = LocalSoftwareKeyboardController.current
+	val showKeyboard: () -> Unit = { keyboard?.show() }
+	val hideKeyboard: () -> Unit = { keyboard?.hide() }
 
 	LaunchedEffect(Unit) {
 		try {

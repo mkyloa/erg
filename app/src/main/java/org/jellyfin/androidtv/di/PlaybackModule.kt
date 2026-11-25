@@ -92,7 +92,8 @@ fun Scope.createPlaybackManager() = playbackManager(androidContext()) {
 	)
 	install(media3SessionPlugin(get(), mediaSessionOptions))
 
-	val deviceProfileBuilder = { createDeviceProfile(androidContext(), userPreferences, get()) }
+	// This player is ExoPlayer only (music, and video on the new player), so never send the mpv profile
+	val deviceProfileBuilder = { createDeviceProfile(androidContext(), userPreferences, get(), useMpv = false) }
 	install(jellyfinPlugin(get(), deviceProfileBuilder, setOf(MediaSegmentType.INTRO), ProcessLifecycleOwner.get().lifecycle))
 
 	// Options

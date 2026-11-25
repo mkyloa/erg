@@ -1,7 +1,6 @@
 package org.jellyfin.androidtv.ui.home.carousel
 
 import androidx.compose.animation.togetherWith
-import android.os.Build
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -55,7 +54,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -67,7 +65,6 @@ import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.Icon
 import androidx.tv.material3.ShapeDefaults
 import androidx.tv.material3.Text
-import kotlinx.coroutines.launch
 import org.jellyfin.androidtv.preference.UserPreferences
 import org.jellyfin.androidtv.ui.composable.AsyncImage
 import org.jellyfin.androidtv.ui.composable.modifier.getBackdropFadingColor
@@ -149,44 +146,8 @@ fun FeaturedCarousel(
 	activeIndex: Int = 0,
 	onActiveIndexChanged: (Int) -> Unit = {}
 ) {
-	if (items.isEmpty()) {
-		timber.log.Timber.d("FeaturedCarousel: Showing no items message")
-		Box(
-			modifier = modifier
-				.fillMaxSize()
-				.focusable()
-				.onKeyEvent { keyEvent ->
-					if (keyEvent.type == KeyEventType.KeyDown) {
-						when (keyEvent.key) {
-							Key.DirectionDown -> {
-								// Let focus move to the next focusable element (toolbar)
-								false
-							}
-							else -> false
-						}
-					} else false
-				}
-				.background(MaterialTheme.colorScheme.surface)
-		) {
-			Box(
-				modifier = Modifier
-					.align(Alignment.Center)
-					.background(Color.Magenta)
-					.padding(16.dp)
-			) {
-				Text(
-					text = "NO FEATURED ITEMS - DEBUG TEST",
-					style = MaterialTheme.typography.bodyLarge.copy(
-						fontSize = 24.sp,
-						fontWeight = FontWeight.Bold
-					),
-					color = Color.Cyan,
-					textAlign = TextAlign.Center
-				)
-			}
-		}
-		return
-	}
+	// The home screen only shows the carousel when it has items
+	if (items.isEmpty()) return
 
 	var isCarouselFocused by remember { mutableStateOf(false) }
 	val borderAlpha by androidx.compose.animation.core.animateFloatAsState(
@@ -199,10 +160,15 @@ fun FeaturedCarousel(
 
 	var currentIndex by remember { mutableIntStateOf(activeIndex) }
 	val context = LocalContext.current
-	var isManualNavigation by remember { mutableStateOf(false) } // Flag to prevent auto-scroll during manual navigation
-	var lastManualNavigationTime by remember { mutableLongStateOf(0L) } // Track last manual navigation time
-	val isAndroid12OrLower = remember { Build.VERSION.SDK_INT <= Build.VERSION_CODES.S }
+	// Each Left/Right press pauses auto-scroll for 5 s after the latest press
+	var lastManualNavigationTime by remember { mutableLongStateOf(0L) }
 	var autoScrollEnabled by remember { mutableStateOf(true) }
+	LaunchedEffect(lastManualNavigationTime) {
+		if (lastManualNavigationTime == 0L) return@LaunchedEffect
+		autoScrollEnabled = false
+		kotlinx.coroutines.delay(5000L)
+		autoScrollEnabled = true
+	}
 
 	LaunchedEffect(activeIndex) {
 		if (activeIndex != currentIndex) {
@@ -221,25 +187,13 @@ fun FeaturedCarousel(
 					currentIndex = newIndex
 					actualCarouselIndex = newIndex
 					onActiveIndexChanged(newIndex)
-
-					if (isAndroid12OrLower) {
-					}
 				} else {
 					break
 				}
 			}
-		} else {
 		}
 	}
 
-	val disableAutoScrollTemporarily = {
-		autoScrollEnabled = false
-
-		kotlinx.coroutines.GlobalScope.launch {
-			kotlinx.coroutines.delay(5000L) // 5 second delay
-			autoScrollEnabled = true
-		}
-	}
 	// Don't steal focus pls
 	Android12CompatibleCarousel(
 		items = items,
@@ -251,12 +205,7 @@ fun FeaturedCarousel(
 			onActiveIndexChanged(newIndex)
 		},
 		onManualNavigation = { isManual ->
-			isManualNavigation = isManual
-			if (isManual) {
-				lastManualNavigationTime = System.currentTimeMillis()
-				disableAutoScrollTemporarily()
-			} else {
-			}
+			if (isManual) lastManualNavigationTime = System.currentTimeMillis()
 		},
 		isCarouselFocused = isCarouselFocused,
 		borderAlpha = borderAlpha,
@@ -278,6 +227,7 @@ private fun Android12CompatibleCarousel(
 	borderAlpha: Float,
 	modifier: Modifier = Modifier
 ) {
+	val carouselDescription = androidx.compose.ui.res.stringResource(org.jellyfin.androidtv.R.string.erg_featured_carousel)
 	val carouselFocusRequester = remember { FocusRequester() }
 	var carouselHasFocus by remember { mutableStateOf(false) }
 
@@ -328,7 +278,7 @@ private fun Android12CompatibleCarousel(
 			)
 			.clip(org.jellyfin.androidtv.ui.composable.item.rememberBannerShape())
 			.semantics {
-				contentDescription = "Featured items carousel - Android 12 compatibility mode"
+				contentDescription = carouselDescription
 			}
 	) {
 		if (items.isNotEmpty()) {

@@ -2,12 +2,21 @@ package org.jellyfin.androidtv.seerr
 
 import android.content.Context
 import androidx.core.content.edit
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import okhttp3.Call
+import okhttp3.Callback
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.MediaType.Companion.toMediaType
@@ -18,6 +27,7 @@ import okhttp3.Response
 import org.jellyfin.androidtv.auth.repository.UserRepository
 import java.io.IOException
 import java.util.concurrent.TimeUnit
+import kotlin.coroutines.resumeWithException
 
 class SeerrException(message: String, val code: Int = 0) : IOException(message)
 
@@ -41,12 +51,24 @@ class SeerrClient(
 	private val http = OkHttpClient.Builder()
 		.connectTimeout(10, TimeUnit.SECONDS)
 		.readTimeout(20, TimeUnit.SECONDS)
-		.followRedirects(true)
+		// Redirects are handled in [call]: OkHttp would turn a sign-in POST into a GET and forward
+		// the hand-set session cookie to whatever host the redirect names
+		.followRedirects(false)
+		.followSslRedirects(false)
 		.build()
 
 	private val _signedInUser = MutableStateFlow<SeerrUser?>(null)
 	/** Seerr account of the current Jellyfin user, once [refreshUser] or a sign-in has run. */
 	val signedInUser: StateFlow<SeerrUser?> = _signedInUser.asStateFlow()
+
+	init {
+		// Sessions are stored per Jellyfin user; forget the previous user's Seerr account on a switch
+		CoroutineScope(SupervisorJob() + Dispatchers.Default).launch {
+			userRepository.currentUser.map { it?.id }.distinctUntilChanged().drop(1).collect {
+				_signedInUser.value = null
+			}
+		}
+	}
 
 	// --- Configuration ----------------------------------------------------------------------
 
@@ -129,7 +151,7 @@ class SeerrClient(
 			.url(url(path))
 			.post(body.toRequestBody(JSON))
 			.build()
-		http.newCall(request).execute().use { response ->
+		call(request).use { response ->
 			val text = response.checkSuccess()
 			val cookie = response.headers("Set-Cookie")
 				.firstOrNull { it.startsWith("$COOKIE_NAME=") }
@@ -245,22 +267,56 @@ class SeerrClient(
 		execute(Request.Builder().url(url(path)).post(body.toRequestBody(JSON)), authenticated)
 	}
 
-	private inline fun <reified T> execute(builder: Request.Builder, authenticated: Boolean): T {
+	private suspend inline fun <reified T> execute(builder: Request.Builder, authenticated: Boolean): T {
 		if (authenticated) {
 			val cookie = sessionCookie ?: throw SeerrException("Not signed in to Seerr", 401)
 			builder.header("Cookie", cookie)
 		}
 		builder.header("Accept", "application/json")
-		return http.newCall(builder.build()).execute().use { response ->
+		return call(builder.build()).use { response ->
 			val text = response.checkSuccess()
 			json.decodeFromString<T>(text.ifBlank { "{}" })
 		}
 	}
 
-	private fun executeRaw(builder: Request.Builder) {
+	private suspend fun executeRaw(builder: Request.Builder) {
 		val cookie = sessionCookie ?: throw SeerrException("Not signed in to Seerr", 401)
 		builder.header("Cookie", cookie).header("Accept", "application/json")
-		http.newCall(builder.build()).execute().use { it.checkSuccess() }
+		call(builder.build()).use { it.checkSuccess() }
+	}
+
+	/**
+	 * Runs [request]. A redirect from http to https on the same host (a reverse proxy forcing TLS)
+	 * moves the stored address to https and retries; any other redirect is reported, not followed.
+	 */
+	private suspend fun call(request: Request): Response {
+		val response = http.newCall(request).await()
+		if (!response.isRedirect) return response
+		val location = response.header("Location")?.let { request.url.resolve(it) }
+		response.close()
+		val base = serverUrl?.toHttpUrlOrNull()
+		if (location != null && base != null && location.isHttps && !request.url.isHttps && location.host == request.url.host) {
+			val upgraded = base.newBuilder().scheme("https").port(location.port).build().toString().trimEnd('/')
+			// Same server, so the stored sessions stay valid
+			prefs.edit { putString(KEY_URL, upgraded) }
+			val retried = request.url.newBuilder().scheme("https").port(location.port).build()
+			return http.newCall(request.newBuilder().url(retried).build()).await()
+		}
+		throw SeerrException("Seerr redirected to ${location ?: "another address"}. Enter that address in Settings.")
+	}
+
+	/** Like execute(), but cancelling the coroutine aborts the request (timeouts, leaving a screen). */
+	private suspend fun Call.await(): Response = suspendCancellableCoroutine { continuation ->
+		continuation.invokeOnCancellation { cancel() }
+		enqueue(object : Callback {
+			override fun onResponse(call: Call, response: Response) {
+				continuation.resume(response) { _, value, _ -> value.close() }
+			}
+
+			override fun onFailure(call: Call, e: IOException) {
+				continuation.resumeWithException(e)
+			}
+		})
 	}
 
 	private fun Response.checkSuccess(): String {

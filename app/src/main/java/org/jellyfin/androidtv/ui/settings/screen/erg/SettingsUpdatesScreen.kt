@@ -56,7 +56,7 @@ fun SettingsUpdatesScreen() {
 				captionContent = caption?.let { { Text(it) } },
 				enabled = state !is ErgUpdater.State.Checking && state !is ErgUpdater.State.Downloading && state !is ErgUpdater.State.Installing,
 				onClick = {
-					scope.launch { if (release != null) updater.install(release) else updater.check(force = true) }
+					if (release != null) updater.install(release) else scope.launch { updater.check(force = true) }
 				},
 			)
 		}

@@ -50,6 +50,7 @@ object MpvSupport {
 
 		return MpvPlayer.Options(
 			authorizationHeader = authorization,
+			serverHost = runCatching { android.net.Uri.parse(api.baseUrl).host }.getOrNull(),
 			userAgent = "${api.clientInfo.name}/${api.clientInfo.version}",
 			audioSpdif = spdif,
 			cacheMegabytes = cacheMegabytes,

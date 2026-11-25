@@ -30,7 +30,7 @@ fun SettingsHomeCuratedRowScreen(index: Int) {
 	val router = LocalRouter.current
 	val userSettingPreferences = koinInject<UserSettingPreferences>()
 	val preference = userSettingPreferences.genrerows.getOrNull(index)
-		?: return ListMessage { Text("Unknown row $index") }
+		?: return ListMessage { Text(stringResource(R.string.erg_unknown_row, index)) }
 
 	var rowType by rememberPreference(userSettingPreferences, preference)
 

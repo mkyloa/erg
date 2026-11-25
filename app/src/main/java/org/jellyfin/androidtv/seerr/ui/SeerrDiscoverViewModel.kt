@@ -181,15 +181,21 @@ class SeerrDiscoverViewModel(
 		"upcoming_tv" to { page -> seerr.upcomingTv(page) },
 	)
 
-	/** Called on screen start/resume: picks up settings changes and re-validates the session. */
-	fun refresh() {
+	private var refreshJob: Job? = null
+
+	/**
+	 * Called on screen start/resume: picks up settings changes and re-validates the session.
+	 * With [discover] false (opened for a single title) the Discover rows aren't loaded at all.
+	 */
+	fun refresh(discover: Boolean = true) {
 		if (!seerr.hasSession) {
 			_state.value = SeerrDiscoverState.NeedsSetup
 			return
 		}
+		if (!discover || refreshJob?.isActive == true) return
 		val existing = _state.value as? SeerrDiscoverState.Content
 		if (existing == null) _state.value = SeerrDiscoverState.Loading
-		viewModelScope.launch {
+		refreshJob = viewModelScope.launch {
 			try {
 				// Always re-check: the session is per Jellyfin user and users can switch
 				val user = seerr.refreshUser()
@@ -342,7 +348,8 @@ class SeerrDiscoverViewModel(
 		val isMovie = !item.isTv
 		val details = if (isMovie) seerr.movie(item.id) else seerr.tv(item.id)
 		detailsCache[cacheKey(isMovie, item.id)] = details
-		val user = seerr.signedInUser.value
+		// Opened straight from search or home, nothing has looked the account up yet
+		val user = seerr.signedInUser.value ?: runCatching { seerr.refreshUser() }.getOrNull()
 		updateEntry(id) { SeerrDetailState.Content(details, isMovie = isMovie, user = user) }
 
 		// Extras fill in as they arrive; any of them failing just leaves that part out
@@ -575,6 +582,8 @@ class SeerrDiscoverViewModel(
 	}
 
 	private fun push(load: suspend CoroutineScope.(id: Int) -> Unit) {
+		// A second press while a page loads would stack a duplicate that Back then has to close
+		if (_stack.value.lastOrNull()?.state == SeerrDetailState.Loading) return
 		val id = nextEntryId++
 		_stack.update { it + SeerrDetailEntry(id, SeerrDetailState.Loading) }
 		entryJobs[id] = viewModelScope.launch {

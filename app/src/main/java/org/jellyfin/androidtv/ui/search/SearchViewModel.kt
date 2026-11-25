@@ -2,6 +2,7 @@ package org.jellyfin.androidtv.ui.search
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -92,9 +93,15 @@ class SearchViewModel(
 		// Separate from the library search, so a slow Seerr never holds up library results
 		if (seerr.hasSession) seerrJob = viewModelScope.launch {
 			delay(debounce)
-			_seerrResults.value = runCatching { seerr.search(trimmed).results.requestable(includeAvailable = false) }
-				.onFailure { Timber.w(it, "Seerr search failed") }
-				.getOrDefault(emptyList())
+			_seerrResults.value = try {
+				seerr.search(trimmed).results.requestable(includeAvailable = false)
+			} catch (err: CancellationException) {
+				// A newer query replaced this one; don't overwrite its results
+				throw err
+			} catch (err: Exception) {
+				Timber.w(err, "Seerr search failed")
+				emptyList()
+			}
 		}
 
 		_isSearching.value = true

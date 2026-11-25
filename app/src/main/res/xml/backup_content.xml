@@ -8,10 +8,14 @@
     <!-- UserPreferences -->
     <include
         domain="sharedpref"
-        path="org.jellyfin.androidtv_preferences" />
+        path="dev.erg.tv_preferences" />
     <include
         domain="sharedpref"
-        path="org.jellyfin.androidtv.debug_preferences" />
+        path="dev.erg.tv.debug_preferences" />
+    <!-- Erg: remembered audio/subtitle tracks per series -->
+    <include
+        domain="sharedpref"
+        path="track_memory" />
     <!-- SystemPreferences -->
     <include
         domain="sharedpref"

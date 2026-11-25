@@ -2,7 +2,10 @@ package org.jellyfin.androidtv.ui.home
 
 import android.content.Context
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import org.jellyfin.androidtv.R
 import org.jellyfin.androidtv.auth.repository.UserRepository
 import org.jellyfin.androidtv.constant.ChangeTriggerType
@@ -44,11 +47,19 @@ class HomeCuratedRows(
 	/** Builds the rows; runs network lookups (e.g. for "Because you watched") off the main thread. */
 	suspend fun build(): List<HomeFragmentRow> = withContext(Dispatchers.IO) {
 		val userId = userRepository.currentUser.value?.id ?: return@withContext emptyList()
-		enabledTypes.mapNotNull { type ->
-			runCatching { row(type, userId) }
-				.onFailure { Timber.w(it, "Failed to build curated row $type") }
-				.getOrNull()
-		}
+		// In parallel, and Seerr rows capped: home waits for all of these before showing any row,
+		// so a Seerr server that is off must not hold it up for the full connect timeout
+		enabledTypes.map { type ->
+			async {
+				runCatching {
+					if (type == GenreRowType.SEERR_AVAILABLE || type == GenreRowType.SEERR_TRENDING) {
+						withTimeoutOrNull(SEERR_ROW_TIMEOUT_MS) { row(type, userId) }
+					} else row(type, userId)
+				}
+					.onFailure { Timber.w(it, "Failed to build curated row $type") }
+					.getOrNull()
+			}
+		}.awaitAll().filterNotNull()
 	}
 
 	private suspend fun row(type: GenreRowType, userId: java.util.UUID): HomeFragmentRow? = when (type) {
@@ -198,6 +209,7 @@ class HomeCuratedRows(
 	)
 
 	private companion object {
+		const val SEERR_ROW_TIMEOUT_MS = 4_000L
 		const val ITEM_LIMIT = 20
 	}
 }

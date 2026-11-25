@@ -1,5 +1,7 @@
 package org.jellyfin.androidtv.ui.playback;
 
+import org.jellyfin.androidtv.ui.playback.mpv.MpvSupport;
+
 import static org.koin.java.KoinJavaComponent.get;
 import static org.koin.java.KoinJavaComponent.inject;
 
@@ -552,7 +554,9 @@ public class PlaybackController implements PlaybackControllerNotifiable {
         DeviceProfile internalProfile = DeviceProfileKt.createDeviceProfile(
                 mFragment.getContext(),
                 userPreferences.getValue(),
-                get(ServerVersion.class)
+                get(ServerVersion.class),
+                // Ask for the profile of the engine that actually started; mpv can fall back to ExoPlayer
+                mVideoManager != null ? mVideoManager.isMpv() : MpvSupport.INSTANCE.isEnabled(userPreferences.getValue())
         );
         internalOptions.setProfile(internalProfile);
         return internalOptions;

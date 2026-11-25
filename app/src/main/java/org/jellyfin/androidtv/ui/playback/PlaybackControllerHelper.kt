@@ -19,6 +19,7 @@ import org.jellyfin.sdk.model.api.MediaSegmentDto
 import org.jellyfin.sdk.model.api.MediaStreamType
 import org.jellyfin.sdk.model.api.SubtitleDeliveryMethod
 import org.koin.android.ext.android.inject
+import org.koin.java.KoinJavaComponent
 import timber.log.Timber
 import java.util.UUID
 
@@ -235,15 +236,18 @@ private fun PlaybackController.addAskToSkipAction(mediaSegment: MediaSegmentDto)
 
 /** Remembers a subtitle the user picked (-1 = off) for this series. */
 fun PlaybackController.rememberSubtitleChoice(index: Int) {
-	val trackMemory by fragment.inject<TrackMemory>()
+	// Remote commands can arrive after playback ended, when the fragment is already gone
+	val item = currentlyPlayingItem ?: return
+	val trackMemory = KoinJavaComponent.get<TrackMemory>(TrackMemory::class.java)
 	val stream = if (index < 0) null else currentMediaSource?.mediaStreams?.firstOrNull { it.type == MediaStreamType.SUBTITLE && it.index == index }
 	if (index >= 0 && stream == null) return
-	trackMemory.rememberSubtitle(currentlyPlayingItem, stream)
+	trackMemory.rememberSubtitle(item, stream)
 }
 
 /** Remembers an audio track the user picked for this series. */
 fun PlaybackController.rememberAudioChoice(index: Int) {
-	val trackMemory by fragment.inject<TrackMemory>()
+	val item = currentlyPlayingItem ?: return
+	val trackMemory = KoinJavaComponent.get<TrackMemory>(TrackMemory::class.java)
 	val stream = currentMediaSource?.mediaStreams?.firstOrNull { it.type == MediaStreamType.AUDIO && it.index == index } ?: return
-	trackMemory.rememberAudio(currentlyPlayingItem, stream)
+	trackMemory.rememberAudio(item, stream)
 }

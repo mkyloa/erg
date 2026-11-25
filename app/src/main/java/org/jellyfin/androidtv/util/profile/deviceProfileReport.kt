@@ -67,7 +67,7 @@ fun createDeviceProfileReport(
 	appendLine("---")
 	appendLine("client: Jellyfin for Android TV")
 	appendLine("client_version: ${BuildConfig.VERSION_NAME}")
-	appendLine("client_repository: https://github.com/jellyfin/jellyfin-androidtv")
+	appendLine("client_repository: https://github.com/${BuildConfig.UPDATE_REPOSITORY}")
 	appendLine("type: media_capabilities_report")
 	appendLine("format: markdown")
 	appendLine("---")
@@ -78,7 +78,7 @@ fun createDeviceProfileReport(
 		appendLine("- Server compatibility: $serverVersion")
 		appendCodeBlock(
 			language = "json",
-			code = createDeviceProfile(context, userPreferences, serverVersion)
+			code = createDeviceProfile(context, userPreferences, serverVersion, org.jellyfin.androidtv.ui.playback.mpv.MpvSupport.isEnabled(userPreferences))
 				.let(ApiSerializer::encodeRequestBody)
 				?.let(::formatJson)
 		)

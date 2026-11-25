@@ -94,7 +94,9 @@ fun createDeviceProfile(
 	context: Context,
 	userPreferences: UserPreferences,
 	serverVersion: ServerVersion,
-) = if (org.jellyfin.androidtv.ui.playback.mpv.MpvSupport.isEnabled(userPreferences)) {
+	/** Whether mpv will play this; ExoPlayer (and music) must get the device's real profile. */
+	useMpv: Boolean,
+) = if (useMpv) {
 	// mpv handles almost every format itself, so describe it rather than the device's decoders
 	createMpvDeviceProfile(maxBitrate = userPreferences.getMaxBitrate())
 } else createDeviceProfile(

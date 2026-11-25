@@ -462,19 +462,24 @@ public class CustomPlaybackOverlayFragment extends Fragment implements LiveTvGui
             }
 
             if (keyCode == KeyEvent.KEYCODE_MEDIA_PLAY) {
-                playbackControllerContainer.getValue().getPlaybackController().play(0);
+                PlaybackController controller = playbackControllerContainer.getValue().getPlaybackController();
+                if (controller != null) controller.play(0);
                 return true;
             } else if (keyCode == KeyEvent.KEYCODE_MEDIA_PAUSE) {
-                playbackControllerContainer.getValue().getPlaybackController().pause();
+                PlaybackController controller = playbackControllerContainer.getValue().getPlaybackController();
+                if (controller != null) controller.pause();
                 return true;
             } else if (keyCode == KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE) {
-                playbackControllerContainer.getValue().getPlaybackController().playPause();
+                PlaybackController controller = playbackControllerContainer.getValue().getPlaybackController();
+                if (controller != null) controller.playPause();
                 return true;
             } else if (keyCode == KeyEvent.KEYCODE_MEDIA_FAST_FORWARD || keyCode == KeyEvent.KEYCODE_BUTTON_R1 || keyCode == KeyEvent.KEYCODE_BUTTON_R2) {
-                playbackControllerContainer.getValue().getPlaybackController().fastForward();
+                PlaybackController controller = playbackControllerContainer.getValue().getPlaybackController();
+                if (controller != null) controller.fastForward();
                 return true;
             } else if (keyCode == KeyEvent.KEYCODE_MEDIA_REWIND || keyCode == KeyEvent.KEYCODE_BUTTON_L1 || keyCode == KeyEvent.KEYCODE_BUTTON_L2) {
-                playbackControllerContainer.getValue().getPlaybackController().rewind();
+                PlaybackController controller = playbackControllerContainer.getValue().getPlaybackController();
+                if (controller != null) controller.rewind();
                 return true;
             }
         }
@@ -1389,43 +1394,18 @@ public class CustomPlaybackOverlayFragment extends Fragment implements LiveTvGui
         });
     }
 
-    @SuppressWarnings("unchecked")
     private void switchToEpisode(UUID episodeId) {
         PlaybackController controller = playbackControllerContainer.getValue().getPlaybackController();
-        List<BaseItemDto> items = null;
-        try {
-            java.lang.reflect.Field itemsField = controller.getClass().getDeclaredField("mItems");
-            itemsField.setAccessible(true);
-            items = (List<BaseItemDto>) itemsField.get(controller);
-        } catch (Exception e) {
-            playbackHelper.getValue().retrieveAndPlay(episodeId, false, requireContext());
-            return;
-        }
-
-        if (items == null) {
-            playbackHelper.getValue().retrieveAndPlay(episodeId, false, requireContext());
-            return;
-        }
-
-        for (int i = 0; i < items.size(); i++) {
-            BaseItemDto item = items.get(i);
-            if (item.getId().equals(episodeId)) {
-                controller.stop();
-
-                try {
-                    java.lang.reflect.Field currentIndexField = controller.getClass().getDeclaredField("mCurrentIndex");
-                    currentIndexField.setAccessible(true);
-                    currentIndexField.set(controller, i);
-
+        List<BaseItemDto> items = controller != null ? controller.mItems : null;
+        if (items != null) {
+            for (int i = 0; i < items.size(); i++) {
+                if (items.get(i).getId().equals(episodeId)) {
+                    controller.stop();
+                    controller.mCurrentIndex = i;
                     videoQueueManager.getValue().setCurrentMediaPosition(i);
-
                     controller.play(0);
-                } catch (Exception e) {
-                    Timber.e(e, "Error switching to episode");
-                    // Fallback to using retrieveAndPlay if switching fails
-                    playbackHelper.getValue().retrieveAndPlay(episodeId, false, requireContext());
+                    return;
                 }
-                return;
             }
         }
 

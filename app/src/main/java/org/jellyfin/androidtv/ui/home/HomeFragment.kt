@@ -37,11 +37,9 @@ import androidx.compose.ui.unit.sp
 import androidx.fragment.app.Fragment
 import androidx.fragment.compose.AndroidFragment
 import androidx.fragment.compose.content
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jellyfin.androidtv.auth.repository.SessionRepository
@@ -181,88 +179,17 @@ class HomeFragment : Fragment() {
     }
 
     override fun onDestroyView() {
-        try {
-            view?.let { v ->
-                if (v.isAttachedToWindow) {
-                    v.viewTreeObserver.removeOnWindowFocusChangeListener { /* no-op */ }
-                    v.removeCallbacks(null)
-                    v.setOnClickListener(null)
-                    v.setOnKeyListener(null)
-                }
-            }
+        // Callbacks posted to the view or handler would otherwise run against a destroyed view
+        interactionDelayRunnable?.let { view?.removeCallbacks(it) }
+        interactionDelayRunnable = null
+        scrollCheckRunnable?.let(scrollHandler::removeCallbacks)
+        scrollCheckRunnable = null
+        cleanupScrollListeners()
 
-            if (view != null && viewLifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.INITIALIZED)) {
-                try {
-                    viewLifecycleOwner.lifecycleScope.coroutineContext[Job]?.cancel()
-                } catch (e: Exception) {
-                }
-            }
-
-            cleanupScrollListeners()
-
-            _modernBinding = null
-            _classicBinding = null
-        } catch (e: Exception) {
-        } finally {
-            super.onDestroyView()
-        }
+        _modernBinding = null
+        _classicBinding = null
+        super.onDestroyView()
     }
-
-    override fun onDestroy() {
-        try {
-            clearReferences()
-
-            if (!isRemoving && !isStateSaved) {
-                try {
-                    parentFragmentManager
-                        .beginTransaction()
-                        .remove(this)
-                        .commitAllowingStateLoss()
-                } catch (e: Exception) {
-                }
-            }
-        } catch (e: Exception) {
-        } finally {
-            super.onDestroy()
-        }
-    }
-
-    private fun clearReferences() {
-        try {
-            scrollCheckRunnable?.let {
-                scrollHandler.removeCallbacks(it)
-                scrollCheckRunnable = null
-            }
-
-            interactionDelayRunnable?.let {
-                view?.removeCallbacks(it)
-                interactionDelayRunnable = null
-            }
-
-            view?.let { v ->
-                if (v.isAttachedToWindow) {
-                    v.viewTreeObserver.removeOnWindowFocusChangeListener { /* no-op */ }
-                }
-            }
-
-            cleanupScrollListeners()
-
-            view?.let { v -> 
-                v.setOnClickListener(null)
-                v.setOnKeyListener(null)
-                v.removeCallbacks(null)
-            }
-
-            if (view != null && viewLifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.INITIALIZED)) {
-                try {
-                    viewLifecycleOwner.lifecycleScope.coroutineContext[Job]?.cancel()
-                } catch (e: Exception) {
-                }
-            }
-        } catch (e: Exception) {
-        }
-    }
-
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -413,7 +340,7 @@ class HomeFragment : Fragment() {
                                 .padding(horizontal = 20.dp, vertical = 16.dp)
                         ) {
                             androidx.compose.material3.Text(
-                                text = "No featured content available",
+                                text = androidx.compose.ui.res.stringResource(org.jellyfin.androidtv.R.string.erg_featured_empty),
                                 style = androidx.compose.material3.MaterialTheme.typography.bodyLarge.copy(
                                     fontSize = 18.sp,
                                     fontWeight = FontWeight.Bold
@@ -433,7 +360,7 @@ class HomeFragment : Fragment() {
                             horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally
                         ) {
                             androidx.compose.material3.Text(
-                                text = "Error loading featured content",
+                                text = androidx.compose.ui.res.stringResource(org.jellyfin.androidtv.R.string.erg_featured_failed),
                                 style = androidx.compose.material3.MaterialTheme.typography.bodyLarge,
                                 color = androidx.compose.material3.MaterialTheme.colorScheme.error
                             )
@@ -442,7 +369,7 @@ class HomeFragment : Fragment() {
                                 onClick = { carouselViewModel.refresh() },
                                 modifier = Modifier.padding(top = 16.dp)
                             ) {
-                                androidx.compose.material3.Text("Retry")
+                                androidx.compose.material3.Text(androidx.compose.ui.res.stringResource(org.jellyfin.androidtv.R.string.erg_retry))
                             }
                         }
                     }

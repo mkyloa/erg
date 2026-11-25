@@ -73,7 +73,11 @@ fun SeerrDiscoverScreen(
 	val state by viewModel.state.collectAsState()
 	val stack by viewModel.stack.collectAsState()
 	val detail = stack.lastOrNull()
-	val actions = remember(viewModel) { SeerrPageActions(viewModel, onOpenLibraryItem, onPlayTrailer) }
+	// Back walks back through the pages; from search, leaving the first page leaves Discover
+	val back = {
+		if (initialItem != null && viewModel.stack.value.size == 1) onCloseInitialItem() else viewModel.closeDetail()
+	}
+	val actions = remember(viewModel) { SeerrPageActions(viewModel, onOpenLibraryItem, onPlayTrailer, onBack = { back() }) }
 
 	Box(
 		Modifier
@@ -115,10 +119,7 @@ fun SeerrDiscoverScreen(
 		}
 		}
 
-		// Back walks back through the pages; from search, leaving the first page leaves Discover
-		if (detail != null) BackHandler {
-			if (initialItem != null && stack.size == 1) onCloseInitialItem() else viewModel.closeDetail()
-		}
+		if (detail != null) BackHandler { back() }
 
 		// Keep the last detail state around while it fades out
 		var lastDetail by remember { mutableStateOf(detail) }

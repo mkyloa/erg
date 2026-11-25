@@ -88,7 +88,7 @@ fun SettingsHomePinnedRowScreen(index: Int) {
 	val prefs = koinInject<UserSettingPreferences>()
 	var current by remember { mutableIntStateOf(index) }
 	val rows = PinnedRows.load(prefs)
-	val row = rows.getOrNull(current) ?: return ListMessage { Text("Unknown row $index") }
+	val row = rows.getOrNull(current) ?: return ListMessage { Text(stringResource(R.string.erg_unknown_row, index)) }
 
 	SettingsColumn {
 		item {

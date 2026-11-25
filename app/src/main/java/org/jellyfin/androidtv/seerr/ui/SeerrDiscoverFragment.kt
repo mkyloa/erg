@@ -65,7 +65,8 @@ class SeerrDiscoverFragment : Fragment() {
 		super.onResume()
 		// The screen draws its own backdrops
 		backgroundService.clearBackgrounds()
-		// Picks up a sign-in made in the settings dialog
-		viewModel.refresh()
+		// Picks up a sign-in made in the settings dialog. Opened for one title (from search or
+		// home), Discover is never shown, so don't load its ~50 requests behind the page.
+		viewModel.refresh(discover = arguments?.containsKey(EXTRA_ITEM_ID) != true)
 	}
 }

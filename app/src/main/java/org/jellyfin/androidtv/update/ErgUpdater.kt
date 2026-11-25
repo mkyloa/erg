@@ -9,10 +9,16 @@ import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import androidx.core.content.edit
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -20,8 +26,11 @@ import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jellyfin.androidtv.BuildConfig
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 import timber.log.Timber
 import java.io.File
+import java.security.MessageDigest
 import java.util.concurrent.TimeUnit
 
 /**
@@ -50,6 +59,8 @@ class ErgUpdater(private val context: Context) {
 		val name: String,
 		@SerialName("browser_download_url") val url: String,
 		val size: Long = 0,
+		/** "sha256:<hex>", which GitHub computes for every release asset. */
+		val digest: String? = null,
 	)
 
 	sealed interface State {
@@ -70,6 +81,10 @@ class ErgUpdater(private val context: Context) {
 		.connectTimeout(15, TimeUnit.SECONDS)
 		.readTimeout(60, TimeUnit.SECONDS)
 		.build()
+
+	/** Downloads outlive the screen that started them, so they run here rather than in its scope. */
+	private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+	private var installJob: Job? = null
 
 	private val _state = MutableStateFlow<State>(State.Idle)
 	val state: StateFlow<State> = _state.asStateFlow()
@@ -132,8 +147,13 @@ class ErgUpdater(private val context: Context) {
 		}
 	}
 
-	/** Downloads the release APK and hands it to the system installer. */
-	suspend fun install(release: Release) {
+	/** Downloads the release APK and hands it to the system installer. Ignored while one is running. */
+	fun install(release: Release) {
+		if (installJob?.isActive == true) return
+		installJob = scope.launch { runInstall(release) }
+	}
+
+	private suspend fun runInstall(release: Release) {
 		val asset = release.apk ?: return
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !context.packageManager.canRequestPackageInstalls()) {
 			_state.value = State.NeedsPermission(release)
@@ -148,9 +168,22 @@ class ErgUpdater(private val context: Context) {
 			val file = download(release, asset)
 			_state.value = State.Installing(release)
 			withContext(Dispatchers.IO) { commitSession(file) }
+		} catch (err: CancellationException) {
+			throw err
 		} catch (err: Exception) {
 			Timber.e(err, "Update install failed")
 			_state.value = State.Error(err.message ?: err.toString())
+		}
+	}
+
+	/** The installer's verdict, from [UpdateInstallReceiver]; without it the state stays "Installing". */
+	internal fun onInstallResult(status: Int, message: String?) {
+		val release = (_state.value as? State.Installing)?.release
+		_state.value = when (status) {
+			PackageInstaller.STATUS_SUCCESS -> State.Idle
+			// The user backed out of the system confirmation: offer the update again
+			PackageInstaller.STATUS_FAILURE_ABORTED -> release?.let { State.Available(it) } ?: State.Idle
+			else -> State.Error(message ?: "installer status $status")
 		}
 	}
 
@@ -169,6 +202,7 @@ class ErgUpdater(private val context: Context) {
 					var done = 0L
 					var lastReported = 0f
 					while (true) {
+						ensureActive()
 						val read = input.read(buffer)
 						if (read < 0) break
 						output.write(buffer, 0, read)
@@ -184,7 +218,27 @@ class ErgUpdater(private val context: Context) {
 				}
 			}
 		}
+		verify(target, asset)
 		target
+	}
+
+	/** Catches truncated or corrupted downloads before the installer gives an opaque error. */
+	private fun verify(file: File, asset: Asset) {
+		if (asset.size > 0 && file.length() != asset.size) {
+			throw IllegalStateException("Download incomplete: ${file.length()} of ${asset.size} bytes")
+		}
+		val expected = asset.digest?.takeIf { it.startsWith("sha256:") }?.removePrefix("sha256:") ?: return
+		val digest = MessageDigest.getInstance("SHA-256")
+		file.inputStream().use { input ->
+			val buffer = ByteArray(64 * 1024)
+			while (true) {
+				val read = input.read(buffer)
+				if (read < 0) break
+				digest.update(buffer, 0, read)
+			}
+		}
+		val actual = digest.digest().joinToString("") { "%02x".format(it) }
+		if (!actual.equals(expected, ignoreCase = true)) throw IllegalStateException("Download is corrupted (checksum mismatch)")
 	}
 
 	private fun commitSession(apk: File) {
@@ -253,14 +307,34 @@ class ErgUpdater(private val context: Context) {
 				preA == preB -> 0
 				preA == null -> 1 // 1.0.0 > 1.0.0-beta.1
 				preB == null -> -1
-				else -> preA.compareTo(preB)
+				else -> comparePreRelease(preA, preB)
 			}
+		}
+
+		/** Compares "rc.10" and "rc.9" part by part, numbers as numbers (semver rules). */
+		private fun comparePreRelease(a: String, b: String): Int {
+			val partsA = a.split('.')
+			val partsB = b.split('.')
+			for (i in 0 until minOf(partsA.size, partsB.size)) {
+				val numA = partsA[i].toIntOrNull()
+				val numB = partsB[i].toIntOrNull()
+				val diff = when {
+					numA != null && numB != null -> numA.compareTo(numB)
+					numA != null -> -1 // numeric parts sort before text
+					numB != null -> 1
+					else -> partsA[i].compareTo(partsB[i])
+				}
+				if (diff != 0) return diff
+			}
+			return partsA.size.compareTo(partsB.size)
 		}
 	}
 }
 
 /** Receives the installer's result; shows the system confirmation when it asks for one. */
-class UpdateInstallReceiver : BroadcastReceiver() {
+class UpdateInstallReceiver : BroadcastReceiver(), KoinComponent {
+	private val updater: ErgUpdater by inject()
+
 	override fun onReceive(context: Context, intent: Intent) {
 		when (val status = intent.getIntExtra(PackageInstaller.EXTRA_STATUS, PackageInstaller.STATUS_FAILURE)) {
 			PackageInstaller.STATUS_PENDING_USER_ACTION -> {
@@ -270,8 +344,12 @@ class UpdateInstallReceiver : BroadcastReceiver() {
 				} else intent.getParcelableExtra(Intent.EXTRA_INTENT)
 				confirm?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)?.let(context::startActivity)
 			}
-			PackageInstaller.STATUS_SUCCESS -> Timber.i("Erg update installed")
-			else -> Timber.w("Erg update failed: status %d %s", status, intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE))
+			else -> {
+				val message = intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE)
+				if (status == PackageInstaller.STATUS_SUCCESS) Timber.i("Erg update installed")
+				else Timber.w("Erg update failed: status %d %s", status, message)
+				updater.onInstallResult(status, message)
+			}
 		}
 	}
 }

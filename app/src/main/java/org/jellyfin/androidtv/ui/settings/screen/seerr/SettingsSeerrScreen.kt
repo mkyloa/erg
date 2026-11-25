@@ -227,6 +227,15 @@ fun SettingsSeerrScreen() {
 							password = true,
 							modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
 						)
+						// The password goes to Seerr as typed; say so when nothing encrypts it
+						if (SeerrClient.normalizeUrl(url)?.startsWith("http://") == true) {
+							Text(
+								stringResource(R.string.seerr_http_warning),
+								color = JellyfinTheme.colorScheme.listCaption,
+								fontSize = 12.sp,
+								modifier = Modifier.padding(top = 6.dp),
+							)
+						}
 					}
 				}
 

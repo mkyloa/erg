@@ -109,6 +109,8 @@ class SeerrPageActions(
 	val viewModel: SeerrDiscoverViewModel,
 	val onOpenLibraryItem: (String) -> Unit,
 	val onPlayTrailer: (String) -> Unit,
+	/** Same as the Back key: closes the top page, or leaves Discover when it was opened for one title. */
+	val onBack: () -> Unit,
 )
 
 @Composable
@@ -141,8 +143,15 @@ fun SeerrDetailScreen(
 			label = "seerr-page",
 		) { current ->
 			when (val state = current.state) {
-				SeerrDetailState.Loading -> SkeletonGroup {
-					SkeletonHero(modifier = Modifier.fillMaxSize(), shape = RectangleShape)
+				SeerrDetailState.Loading -> {
+					// Hold focus while loading so presses don't reach the hidden Discover posters
+					val focus = remember { FocusRequester() }
+					LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
+					Box(Modifier.fillMaxSize().focusRequester(focus).focusable()) {
+						SkeletonGroup {
+							SkeletonHero(modifier = Modifier.fillMaxSize(), shape = RectangleShape)
+						}
+					}
 				}
 
 				is SeerrDetailState.Error -> Centered {
@@ -150,7 +159,7 @@ fun SeerrDetailScreen(
 						Text(stringResource(R.string.seerr_load_failed, state.message), color = JellyfinTheme.colorScheme.onBackground)
 						val focus = remember { FocusRequester() }
 						LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
-						Button(onClick = { actions.viewModel.closeDetail() }, modifier = Modifier.padding(top = 16.dp).focusRequester(focus)) {
+						Button(onClick = actions.onBack, modifier = Modifier.padding(top = 16.dp).focusRequester(focus)) {
 							Text(stringResource(R.string.seerr_back))
 						}
 					}
@@ -209,6 +218,16 @@ private fun TitlePage(state: SeerrDetailState.Content, actions: SeerrPageActions
 		withFrameNanos { }
 		val returned = lastOpened != null && runCatching { returnFocus.requestFocus() }.isSuccess
 		if (!returned) runCatching { primaryFocus.requestFocus() }
+	}
+
+	// A finished request swaps the Request button for a status, taking focus with it
+	var wasRequesting by remember { mutableStateOf(state.requesting) }
+	LaunchedEffect(state.requesting) {
+		if (wasRequesting && !state.requesting) {
+			withFrameNanos { }
+			runCatching { primaryFocus.requestFocus() }
+		}
+		wasRequesting = state.requesting
 	}
 
 	FullBleedBackdrop(details.backdropPath)
@@ -375,7 +394,8 @@ private fun TitleHero(
 
 			val openSeasons = details.missingSeasons()
 			when {
-				state.requesting -> Button(onClick = {}, enabled = false, modifier = Modifier.primary()) {
+				// Stays enabled (a no-op) so the focus it had doesn't drop to the page root
+				state.requesting -> Button(onClick = {}, modifier = Modifier.primary()) {
 					Text(stringResource(R.string.seerr_requesting))
 				}
 
@@ -430,7 +450,7 @@ private fun TitleHero(
 
 			// Servers without Seerr's own watchlist don't send the flag
 			details.onUserWatchlist?.let { onList ->
-				Button(onClick = onToggleWatchlist, enabled = !state.watchlistBusy, modifier = Modifier.primary()) {
+				Button(onClick = { if (!state.watchlistBusy) onToggleWatchlist() }, modifier = Modifier.primary()) {
 					Icon(painterResource(if (onList) R.drawable.ic_check else R.drawable.ic_add), contentDescription = null, modifier = Modifier.size(18.dp))
 					Text(
 						stringResource(if (onList) R.string.seerr_on_watchlist else R.string.seerr_add_to_watchlist),
@@ -673,7 +693,7 @@ private fun PersonPage(state: SeerrDetailState.Person, actions: SeerrPageActions
 		if (rows.isEmpty()) item(key = "empty") {
 			// Nothing to browse: keep something focusable so Back and focus still work
 			Box(Modifier.padding(horizontal = ScreenInset)) {
-				Button(onClick = { actions.viewModel.closeDetail() }, modifier = Modifier.focusRequester(firstFocus)) {
+				Button(onClick = actions.onBack, modifier = Modifier.focusRequester(firstFocus)) {
 					Text(stringResource(R.string.seerr_back))
 				}
 			}
@@ -893,6 +913,17 @@ private fun RequestsPage(state: SeerrDetailState.Requests, actions: SeerrPageAct
 		if (!returned) runCatching { if (state.items.isNotEmpty() && !state.canManage) firstFocus.requestFocus() else tabFocus.requestFocus() }
 	}
 
+	// Approving or declining on the Pending tab removes the focused row
+	var lastCount by remember { mutableStateOf(state.items.size) }
+	LaunchedEffect(state.items.size) {
+		if (state.items.size < lastCount) {
+			withFrameNanos { }
+			val moved = state.items.isNotEmpty() && runCatching { firstFocus.requestFocus() }.isSuccess
+			if (!moved) runCatching { tabFocus.requestFocus() }
+		}
+		lastCount = state.items.size
+	}
+
 	val nearEnd by remember(state.items.size) {
 		derivedStateOf { (listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0) >= state.items.size - 4 }
 	}
@@ -1046,8 +1077,9 @@ private fun RequestRow(
 
 		if (canManage && request.status == SeerrRequestStatus.PENDING) {
 			Row(Modifier.padding(start = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-				Button(onClick = { onApprove(true) }, enabled = !busy) { Text(stringResource(R.string.seerr_approve)) }
-				Button(onClick = { onApprove(false) }, enabled = !busy) { Text(stringResource(R.string.seerr_decline)) }
+				// Busy rows ignore presses but stay focusable, so focus isn't dropped mid-action
+				Button(onClick = { if (!busy) onApprove(true) }) { Text(stringResource(R.string.seerr_approve)) }
+				Button(onClick = { if (!busy) onApprove(false) }) { Text(stringResource(R.string.seerr_decline)) }
 			}
 		}
 	}

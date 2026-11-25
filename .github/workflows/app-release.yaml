@@ -17,6 +17,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The build doesn't need the token; don't leave it in .git/config for Gradle plugins to read
+          persist-credentials: false
 
       - name: Setup Java
         uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
@@ -31,7 +34,10 @@ jobs:
         run: echo "JELLYFIN_VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
 
       - name: Decode keystore
-        run: echo "${{ secrets.KEYSTORE }}" | base64 --decode > "$RUNNER_TEMP/erg-release.jks"
+        # Through env, so the secret never becomes part of the script text
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE }}
+        run: echo "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/erg-release.jks"
 
       - name: Build signed release APK
         env:

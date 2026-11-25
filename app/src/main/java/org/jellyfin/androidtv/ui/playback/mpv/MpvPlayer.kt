@@ -1,6 +1,7 @@
 package org.jellyfin.androidtv.ui.playback.mpv
 
 import android.content.Context
+import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import android.util.Base64
@@ -24,6 +25,9 @@ import java.util.Locale
  *
  * All callbacks to [Listener] arrive on the main thread.
  */
+/** How close to the end an EOF counts as finished rather than a dropped stream. */
+private const val END_TOLERANCE_MS = 15_000L
+
 class MpvPlayer(
 	private val context: Context,
 	private val listener: Listener,
@@ -38,8 +42,10 @@ class MpvPlayer(
 	}
 
 	data class Options(
-		/** Value for the HTTP Authorization header sent with every request. */
+		/** Value for the HTTP Authorization header, sent only to [serverHost]. */
 		val authorizationHeader: String?,
+		/** Host of the Jellyfin server; other hosts (remote .strm media) never get the token. */
+		val serverHost: String?,
 		val userAgent: String,
 		/** Codecs to pass through to the receiver, e.g. "ac3,eac3,dts,dts-hd,truehd". Empty for none. */
 		val audioSpdif: String,
@@ -123,14 +129,12 @@ class MpvPlayer(
 		setOptionString("demuxer-max-back-bytes", "${options.cacheMegabytes / 3}MiB")
 		setOptionString("network-timeout", "30")
 		setOptionString("user-agent", options.userAgent)
-		options.authorizationHeader?.let { setOptionString("http-header-fields", "Authorization: $it") }
 
 		// libmpv for Android ships no CA bundle; hand it the device's trusted certificates so
-		// HTTPS servers are verified instead of disabling verification.
-		exportSystemCertificates()?.let {
-			setOptionString("tls-ca-file", it.absolutePath)
-			setOptionString("tls-verify", "yes")
-		}
+		// HTTPS servers are verified instead of disabling verification. Verification stays on even
+		// if the export fails: mpv defaults to tls-verify=no, which would send the token unchecked.
+		exportSystemCertificates()?.let { setOptionString("tls-ca-file", it.absolutePath) }
+		setOptionString("tls-verify", "yes")
 
 		// Subtitles: keep embedded ASS styling, scale plain text subtitles
 		setOptionString("sub-scale", String.format(Locale.US, "%.2f", options.subtitleScale))
@@ -202,6 +206,10 @@ class MpvPlayer(
 			positionMs = startMs
 			mpv.setPropertyString("start", if (startMs > 0) String.format(Locale.US, "%.3f", startMs / 1000.0) else "none")
 			mpv.setPropertyBoolean("pause", false)
+			// The header applies to every request mpv makes, so set it per file and only for our server
+			val toServer = options.serverHost != null && Uri.parse(url).host.equals(options.serverHost, ignoreCase = true)
+			val auth = options.authorizationHeader?.takeIf { toServer }
+			mpv.setPropertyString("http-header-fields", auth?.let { "Authorization: $it" } ?: "")
 			mpv.command(arrayOf("loadfile", url, "replace"))
 		}
 		if (surfaceReady) load() else pendingLoad = load
@@ -401,7 +409,13 @@ class MpvPlayer(
 		fileLoaded = false
 		updatePlayingState()
 		when (reason) {
-			MPVLib.MpvEndFileReason.MPV_END_FILE_REASON_EOF -> if (wasLoaded) listener.onCompletion()
+			MPVLib.MpvEndFileReason.MPV_END_FILE_REASON_EOF -> when {
+				!wasLoaded -> Unit
+				// mpv reports a dropped connection as EOF too; only call it finished near the end
+				durationMs > 0 && positionMs < durationMs - END_TOLERANCE_MS ->
+					listener.onError("The stream ended early at ${positionMs / 1000} s of ${durationMs / 1000} s")
+				else -> listener.onCompletion()
+			}
 			MPVLib.MpvEndFileReason.MPV_END_FILE_REASON_ERROR -> listener.onError("mpv could not play this file (error $error)")
 			else -> Unit
 		}

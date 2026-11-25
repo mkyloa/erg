@@ -1149,6 +1149,7 @@
     <string name="seerr_discover">Discover</string>
     <string name="seerr_server_url">Server address</string>
     <string name="seerr_server_url_hint">e.g. http://192.168.1.10:5055</string>
+    <string name="seerr_http_warning">This address isn\'t encrypted, so the password is sent as plain text. Quick Connect avoids sending it.</string>
     <string name="seerr_server_url_invalid">That doesn\'t look like a valid address</string>
     <string name="seerr_not_signed_in">Not signed in</string>
     <string name="seerr_signed_in_as">Signed in as %1$s</string>
@@ -1346,6 +1347,15 @@
     <string name="erg_update_needs_permission">Allow Erg to install apps in the screen that opened, then try again</string>
     <string name="erg_update_installing">Waiting for the installer…</string>
     <string name="erg_update_failed">Update failed: %1$s</string>
+    <string name="erg_update_hide">Hide</string>
+    <string name="erg_update_close">Close</string>
+    <string name="erg_featured_empty">No featured content available</string>
+    <string name="erg_featured_failed">Couldn\'t load featured content</string>
+    <string name="erg_featured_carousel">Featured</string>
+    <string name="erg_retry">Retry</string>
+    <string name="erg_voice_not_recognized">No voice input recognized</string>
+    <string name="erg_voice_unsupported">Voice search isn\'t supported on this device</string>
+    <string name="erg_unknown_row">Unknown row %1$d</string>
     <string name="erg_update_auto">Check automatically</string>
     <string name="erg_update_unsupported">This build doesn\'t update itself (development build)</string>
 </resources>

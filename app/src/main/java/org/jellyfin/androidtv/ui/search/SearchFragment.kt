@@ -41,7 +41,7 @@ class SearchFragment : Fragment() {
 				viewModel.searchImmediately(matches[0])
 			}
 		} else {
-			Toast.makeText(requireContext(), "No voice input recognized", Toast.LENGTH_SHORT).show()
+			Toast.makeText(requireContext(), R.string.erg_voice_not_recognized, Toast.LENGTH_SHORT).show()
 		}
 	}
 
@@ -53,7 +53,7 @@ class SearchFragment : Fragment() {
 			}
 			voiceSearchLauncher.launch(intent)
 		} catch (e: Exception) {
-			Toast.makeText(requireContext(), "Voice search not supported", Toast.LENGTH_SHORT).show()
+			Toast.makeText(requireContext(), R.string.erg_voice_unsupported, Toast.LENGTH_SHORT).show()
 		}
 	}
 
