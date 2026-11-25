@@ -7,6 +7,9 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
+import androidx.core.view.doOnLayout
+import androidx.core.view.doOnDetach
+import androidx.core.view.doOnAttach
 import android.view.ViewGroup
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -495,6 +498,10 @@ class HomeFragment : Fragment() {
     private var expandedRowsHeight = 0
 
     private fun setupHeroCollapse() {
+        // The fragment outlives its views: coming back from a detail page builds a new, expanded
+        // layout, so the collapse state starts over with it.
+        heroCollapsed = false
+        expandedRowsHeight = 0
         val root = modernBinding.root
         val rows = modernBinding.contentView
         val hero = modernBinding.carouselContainer ?: return
@@ -508,24 +515,34 @@ class HomeFragment : Fragment() {
                 inRows || inHero -> setHeroCollapsed(false)
             }
         }
-        root.viewTreeObserver.addOnGlobalFocusChangeListener(listener)
-        viewLifecycleOwner.lifecycle.addObserver(object : androidx.lifecycle.DefaultLifecycleObserver {
-            override fun onDestroy(owner: androidx.lifecycle.LifecycleOwner) {
-                if (root.viewTreeObserver.isAlive) root.viewTreeObserver.removeOnGlobalFocusChangeListener(listener)
-            }
-        })
+        // Register on the window's observer once attached and remove it from that same observer on
+        // detach; removing via the detached view's observer missed it, so every visit to a detail
+        // page left a listener (and the old views it held) behind.
+        root.doOnAttach { attached ->
+            val observer = attached.viewTreeObserver
+            observer.addOnGlobalFocusChangeListener(listener)
+            attached.doOnDetach { if (observer.isAlive) observer.removeOnGlobalFocusChangeListener(listener) }
+        }
     }
 
     private fun setHeroCollapsed(collapsed: Boolean) {
         if (collapsed == heroCollapsed) return
         heroCollapsed = collapsed
+        val root = _modernBinding?.root ?: return
+        // Restoring focus after coming back can collapse before the first layout, when the screen
+        // height is still 0 and the rows would get no height at all. Apply it once laid out.
+        if (root.height == 0) root.doOnLayout { if (heroCollapsed == collapsed) applyHeroCollapsed(collapsed, animate = false) }
+        else applyHeroCollapsed(collapsed, animate = true)
+    }
+
+    private fun applyHeroCollapsed(collapsed: Boolean, animate: Boolean) {
         val binding = _modernBinding ?: return
         val hero = binding.carouselContainer ?: return
         val rows = binding.contentView
         val root = binding.root as ViewGroup
         if (expandedRowsHeight == 0) expandedRowsHeight = rows.layoutParams.height
 
-        android.transition.TransitionManager.beginDelayedTransition(
+        if (animate) android.transition.TransitionManager.beginDelayedTransition(
             root,
             android.transition.TransitionSet()
                 .addTransition(android.transition.ChangeBounds())
@@ -541,6 +558,7 @@ class HomeFragment : Fragment() {
             height = if (collapsed) root.height - (64 * resources.displayMetrics.density).toInt() else expandedRowsHeight
         }
         _isCarouselPaused.value = collapsed
+        if (!animate) rows.post { alignSelectedRow() }
     }
 
     // The resize animation suppresses the rows' layout, which cancels leanback's scroll to the newly
