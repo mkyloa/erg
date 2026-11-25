@@ -37,6 +37,33 @@ object TrailerUtils {
 			component != null && component.packageName != FRAMEWORK_STUB_PACKAGE
 		}
 
+	// Erg: YouTube apps that take watch links, best first. SmartTube is ad-free, so it wins when
+	// both are installed; Android TV's YouTube often doesn't claim plain links unless asked directly.
+	private val YOUTUBE_PACKAGES = listOf(
+		"org.smarttube.stable",
+		"org.smarttube.beta",
+		"com.teamsmart.videomanager.tv",
+		"com.liskovsoft.smarttubetv.beta",
+		"com.liskovsoft.smarttubetv",
+		"com.google.android.youtube.tv",
+		"com.amazon.firetv.youtube",
+		"com.google.android.youtube",
+	)
+
+	/** Opens a YouTube video by id. Returns false when nothing on this device can play it. */
+	fun openYouTube(context: Context, videoId: String): Boolean {
+		val uri = "$YOUTUBE_URL$videoId".toUri()
+		fun tryStart(intent: Intent) = runCatching {
+			context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+		}.isSuccess
+
+		if (YOUTUBE_PACKAGES.any { tryStart(Intent(Intent.ACTION_VIEW, uri).setPackage(it)) }) return true
+
+		val generic = Intent(Intent.ACTION_VIEW, uri)
+		val component = generic.resolveActivity(context.packageManager)
+		return component != null && component.packageName != FRAMEWORK_STUB_PACKAGE && tryStart(generic)
+	}
+
 	@JvmStatic
 	fun hasPlayableTrailers(context: Context, item: BaseItemDto): Boolean {
 		// Local trailer

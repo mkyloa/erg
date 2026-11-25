@@ -17,5 +17,8 @@ enum class GenreRowType(
 	RECENTLY_RELEASED("recentlyreleased", R.string.show_recently_released_row),
 	WATCH_IT_AGAIN("watchitagain", R.string.show_watch_it_again_row),
 	MUSIC("music", R.string.show_music_videos_row),
+	// Erg: rows from Seerr; empty when Seerr isn't set up
+	SEERR_AVAILABLE("seerravailable", R.string.seerr_home_row_available),
+	SEERR_TRENDING("seerrtrending", R.string.seerr_home_row_trending),
 	NONE("none", R.string.home_section_none),
 }

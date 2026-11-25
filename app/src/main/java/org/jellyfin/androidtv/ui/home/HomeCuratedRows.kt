@@ -19,6 +19,8 @@ import org.jellyfin.sdk.model.api.ItemSortBy
 import org.jellyfin.sdk.model.api.SortOrder
 import org.jellyfin.sdk.model.api.request.GetItemsRequest
 import org.jellyfin.sdk.model.api.request.GetSimilarItemsRequest
+import org.jellyfin.androidtv.seerr.SeerrClient
+import org.jellyfin.sdk.model.serializer.toUUIDOrNull
 import timber.log.Timber
 import java.time.LocalDateTime
 
@@ -140,7 +142,42 @@ class HomeCuratedRows(
 			),
 		)
 
+		GenreRowType.SEERR_AVAILABLE -> seerrAvailableRow(userId)
+		GenreRowType.SEERR_TRENDING -> seerrTrendingRow()
+
 		GenreRowType.NONE -> null
+	}
+
+	/** Your Seerr requests that have reached the library, as regular library cards. */
+	private suspend fun seerrAvailableRow(userId: java.util.UUID): HomeFragmentRow? {
+		val seerr = org.koin.java.KoinJavaComponent.get<SeerrClient>(SeerrClient::class.java)
+		if (!seerr.hasSession) return null
+		val me = seerr.signedInUser.value ?: seerr.refreshUser() ?: return null
+		val ids = seerr.requests(filter = "available", take = ITEM_LIMIT, requestedBy = me.id).results
+			.mapNotNull { it.media?.let { media -> if (it.is4k) media.jellyfinMediaId4k else media.jellyfinMediaId } }
+			.mapNotNull { it.toUUIDOrNull() }
+			.distinct()
+		if (ids.isEmpty()) return null
+		return items(
+			R.string.seerr_home_row_available,
+			GetItemsRequest(
+				userId = userId,
+				ids = ids,
+				sortBy = setOf(ItemSortBy.DATE_CREATED),
+				sortOrder = setOf(SortOrder.DESCENDING),
+			),
+		)
+	}
+
+	private suspend fun seerrTrendingRow(): HomeFragmentRow? {
+		val seerr = org.koin.java.KoinJavaComponent.get<SeerrClient>(SeerrClient::class.java)
+		if (!seerr.hasSession) return null
+		// Only what isn't in the library yet; the rest is already on the home screen
+		val items = seerr.trending().results
+			.filter { (it.isMovie || it.isTv) && !it.status.isAvailable }
+			.take(ITEM_LIMIT)
+		if (items.isEmpty()) return null
+		return SeerrHomeRow(context.getString(R.string.seerr_home_row_trending), items)
 	}
 
 	private fun items(title: Int, query: GetItemsRequest) = HomeFragmentBrowseRowDefRow(

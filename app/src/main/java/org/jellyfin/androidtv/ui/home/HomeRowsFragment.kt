@@ -399,6 +399,12 @@ class HomeRowsFragment : RowsSupportFragment(), AudioEventListener, View.OnKeyLi
 				}
 			}
 
+			// Erg: Seerr titles open their Seerr page
+			if (item is org.jellyfin.androidtv.seerr.SeerrResult) {
+				navigationRepository.navigate(Destinations.seerrItem(item.id, item.mediaType ?: org.jellyfin.androidtv.seerr.MEDIA_MOVIE))
+				return
+			}
+
 			if (item !is BaseRowItem) return
 			itemLauncher.launch(item, (row as ListRow).adapter as ItemRowAdapter, requireContext())
 		}

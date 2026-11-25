@@ -1143,6 +1143,10 @@ public class FullDetailsFragment extends Fragment implements RecordingIndicatorV
             mDetailsOverviewRow.addAction(pluginButton);
         }
 
+        // Erg: "N missing seasons" from Seerr, shown once Seerr confirms there are some
+        DetailButton seerrButton = FullDetailsFragmentHelperKt.createSeerrMissingSeasonsButton(this, mBaseItem);
+        if (seerrButton != null) mDetailsOverviewRow.addAction(seerrButton);
+
         //Now, create a more button to show if needed
         moreButton = DetailButton.create(requireContext(), R.drawable.ic_more, getString(R.string.lbl_other_options), new View.OnClickListener() {
             @Override
@@ -1339,6 +1343,13 @@ public class FullDetailsFragment extends Fragment implements RecordingIndicatorV
             mBaseItem
         );
         popup.show();
+    }
+
+    /** Redraws the action buttons, e.g. after one appeared once a lookup finished. */
+    void rebindActions() {
+        if (mDorPresenter != null && mDorPresenter.getViewHolder() != null && mDetailsOverviewRow != null) {
+            mDorPresenter.getViewHolder().setItem(mDetailsOverviewRow);
+        }
     }
 
     private void refreshItemDetails() {

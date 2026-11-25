@@ -66,11 +66,14 @@ fun SeerrDiscoverScreen(
 	onOpenSearch: () -> Unit,
 	onOpenSettings: () -> Unit,
 	onOpenLibraryItem: (String) -> Unit,
+	onPlayTrailer: (String) -> Unit,
 ) {
 	// Opened from search on one title: show its page; leaving it leaves Discover too
-	LaunchedEffect(initialItem) { initialItem?.let(viewModel::openDetail) }
+	LaunchedEffect(initialItem) { if (initialItem != null && viewModel.stack.value.isEmpty()) viewModel.openDetail(initialItem) }
 	val state by viewModel.state.collectAsState()
-	val detail by viewModel.detail.collectAsState()
+	val stack by viewModel.stack.collectAsState()
+	val detail = stack.lastOrNull()
+	val actions = remember(viewModel) { SeerrPageActions(viewModel, onOpenLibraryItem, onPlayTrailer) }
 
 	Box(
 		Modifier
@@ -101,15 +104,21 @@ fun SeerrDiscoverScreen(
 			}
 
 			is SeerrDiscoverState.Content -> DiscoverContent(
-				rows = current.rows,
+				sections = current.sections,
 				detailOpen = detail != null,
 				onOpenSearch = onOpenSearch,
+				onOpenRequests = viewModel::openRequests,
 				onSelect = viewModel::openDetail,
+				onSelectTile = viewModel::openBrowse,
+				onNearEnd = viewModel::loadMore,
 			)
 		}
 		}
 
-		if (detail != null) BackHandler { if (initialItem != null) onCloseInitialItem() else viewModel.closeDetail() }
+		// Back walks back through the pages; from search, leaving the first page leaves Discover
+		if (detail != null) BackHandler {
+			if (initialItem != null && stack.size == 1) onCloseInitialItem() else viewModel.closeDetail()
+		}
 
 		// Keep the last detail state around while it fades out
 		var lastDetail by remember { mutableStateOf(detail) }
@@ -121,10 +130,10 @@ fun SeerrDiscoverScreen(
 		) {
 			lastDetail?.let { detailState ->
 				SeerrDetailScreen(
-					state = detailState,
+					entry = detailState,
+					liveIds = stack.map { it.id }.toSet(),
 					trapFocus = detail != null,
-					viewModel = viewModel,
-					onOpenLibraryItem = onOpenLibraryItem,
+					actions = actions,
 				)
 			}
 		}
@@ -133,16 +142,20 @@ fun SeerrDiscoverScreen(
 
 @Composable
 private fun DiscoverContent(
-	rows: List<SeerrRow>,
+	sections: List<SeerrSection>,
 	detailOpen: Boolean,
 	onOpenSearch: () -> Unit,
+	onOpenRequests: () -> Unit,
 	onSelect: (SeerrResult) -> Unit,
+	onSelectTile: (SeerrTile) -> Unit,
+	onNearEnd: (String) -> Unit,
 ) {
 	val firstRowFocus = remember { FocusRequester() }
 	// The poster a title page was opened from, so Back lands on it again
 	var lastOpened by rememberSaveable { mutableStateOf<String?>(null) }
 	val returnFocus = remember { FocusRequester() }
 	val select: (String, SeerrResult) -> Unit = { key, item -> lastOpened = key; onSelect(item) }
+	val selectTile: (String, SeerrTile) -> Unit = { key, tile -> lastOpened = key; onSelectTile(tile) }
 
 	LaunchedEffect(Unit) { if (!detailOpen) runCatching { firstRowFocus.requestFocus() } }
 	LaunchedEffect(detailOpen) {
@@ -169,30 +182,56 @@ private fun DiscoverContent(
 					Icon(painterResource(R.drawable.ic_search), contentDescription = null, modifier = Modifier.size(18.dp))
 					Text(stringResource(R.string.seerr_search_hint), modifier = Modifier.padding(start = 8.dp))
 				}
+				Button(onClick = { lastOpened = "requests"; onOpenRequests() }, modifier = Modifier
+					.padding(start = 12.dp)
+					.then(if (lastOpened == "requests") Modifier.focusRequester(returnFocus) else Modifier)) {
+					Icon(painterResource(R.drawable.ic_time), contentDescription = null, modifier = Modifier.size(18.dp))
+					Text(stringResource(R.string.seerr_requests), modifier = Modifier.padding(start = 8.dp))
+				}
 			}
 		}
 
-		rows.forEachIndexed { index, row ->
-			item(key = row.key) {
-				PosterRow(
-					rowKey = row.key,
-					title = stringResource(row.title),
-					items = row.items,
-					onSelect = select,
-					returnKey = lastOpened,
-					returnFocus = returnFocus,
-					firstItemFocus = if (index == 0) firstRowFocus else null,
-				)
+		val firstRowKey = sections.firstOrNull()?.key
+		sections.forEach { section ->
+			item(key = section.key) {
+				when (section) {
+					is SeerrRow -> PosterRow(
+						rowKey = section.key,
+						title = stringResource(section.title),
+						items = section.items,
+						onSelect = select,
+						returnKey = lastOpened,
+						returnFocus = returnFocus,
+						firstItemFocus = if (section.key == firstRowKey) firstRowFocus else null,
+						onNearEnd = if (section.hasMore) ({ onNearEnd(section.key) }) else null,
+					)
+
+					is SeerrTileRow -> TileRow(
+						row = section,
+						onSelect = selectTile,
+						returnKey = lastOpened,
+						returnFocus = returnFocus,
+						firstItemFocus = if (section.key == firstRowKey) firstRowFocus else null,
+					)
+				}
 			}
 		}
 	}
 }
 
 /** Left and right margin of the screen's content. */
-private val ScreenInset = 48.dp
+internal val ScreenInset = 48.dp
 
 @Composable
-private fun PosterRow(
+internal fun RowTitle(title: String) = Text(
+	title,
+	color = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onBackground,
+	fontSize = 20.sp,
+	modifier = Modifier.padding(start = ScreenInset, bottom = 10.dp),
+)
+
+@Composable
+internal fun PosterRow(
 	rowKey: String,
 	title: String,
 	items: List<SeerrResult>,
@@ -200,10 +239,22 @@ private fun PosterRow(
 	returnKey: String?,
 	returnFocus: FocusRequester,
 	firstItemFocus: FocusRequester? = null,
+	onNearEnd: (() -> Unit)? = null,
 ) {
+	val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+	if (onNearEnd != null) {
+		val nearEnd by remember(items.size) {
+			androidx.compose.runtime.derivedStateOf {
+				(listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0) >= items.size - LOAD_MORE_AHEAD
+			}
+		}
+		LaunchedEffect(nearEnd, items.size) { if (nearEnd) onNearEnd() }
+	}
+
 	Column {
-		Text(title, color = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onBackground, fontSize = 20.sp, modifier = Modifier.padding(start = ScreenInset, bottom = 10.dp))
+		RowTitle(title)
 		LazyRow(
+			state = listState,
 			horizontalArrangement = Arrangement.spacedBy(14.dp),
 			contentPadding = PaddingValues(vertical = 4.dp, horizontal = ScreenInset),
 		) {
@@ -219,6 +270,75 @@ private fun PosterRow(
 				)
 			}
 		}
+	}
+}
+
+/** Rows ask for their next page this many posters before the end. */
+private const val LOAD_MORE_AHEAD = 6
+
+private val TileWidth = 240.dp
+private val TileHeight = 135.dp
+
+@Composable
+private fun TileRow(
+	row: SeerrTileRow,
+	onSelect: (String, SeerrTile) -> Unit,
+	returnKey: String?,
+	returnFocus: FocusRequester,
+	firstItemFocus: FocusRequester? = null,
+) {
+	Column {
+		RowTitle(stringResource(row.title))
+		LazyRow(
+			horizontalArrangement = Arrangement.spacedBy(14.dp),
+			contentPadding = PaddingValues(vertical = 4.dp, horizontal = ScreenInset),
+		) {
+			items(row.tiles, key = { it.key }) { tile ->
+				val key = "${row.key}/${tile.key}"
+				TileCard(
+					tile = tile,
+					onClick = { onSelect(key, tile) },
+					modifier = Modifier
+						.then(if (key == returnKey) Modifier.focusRequester(returnFocus) else Modifier)
+						.then(if (firstItemFocus != null && tile == row.tiles.first()) Modifier.focusRequester(firstItemFocus) else Modifier),
+				)
+			}
+		}
+	}
+}
+
+/** A genre (with a backdrop) or a network/studio (name on a tinted card). */
+@Composable
+private fun TileCard(tile: SeerrTile, onClick: () -> Unit, modifier: Modifier = Modifier) {
+	val colors = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme
+	val cardShape = org.jellyfin.androidtv.ui.composable.item.rememberCardShape()
+	val interaction = remember { MutableInteractionSource() }
+	val focused by interaction.collectIsFocusedAsState()
+
+	Box(
+		modifier
+			.size(TileWidth, TileHeight)
+			.clip(cardShape)
+			.background(colors.onBackground.copy(alpha = 0.1f), cardShape)
+			.then(if (focused) Modifier.border(2.dp, colors.onBackground, cardShape) else Modifier)
+			.clickable(interactionSource = interaction, indication = null, onClick = onClick)
+			.focusable(interactionSource = interaction),
+		contentAlignment = Alignment.Center,
+	) {
+		val image = seerrImageUrl(tile.imagePath, "w780")
+		if (image != null) {
+			SeerrImage(url = image, contentDescription = null, shape = cardShape, modifier = Modifier.fillMaxSize())
+			Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = if (focused) 0.35f else 0.55f)))
+		}
+		Text(
+			tile.name,
+			color = if (image != null) Color.White else colors.onBackground,
+			fontSize = 18.sp,
+			fontWeight = FontWeight.Bold,
+			maxLines = 2,
+			textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+			modifier = Modifier.padding(12.dp),
+		)
 	}
 }
 
@@ -276,7 +396,7 @@ internal fun PosterCard(
 }
 
 @Composable
-fun StatusBadge(status: SeerrMediaStatus, modifier: Modifier = Modifier) {
+fun StatusBadge(status: SeerrMediaStatus, modifier: Modifier = Modifier, label4k: Boolean = false) {
 	val (label, color) = when (status) {
 		SeerrMediaStatus.AVAILABLE -> R.string.seerr_status_available to org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.success
 		SeerrMediaStatus.PARTIALLY_AVAILABLE -> R.string.seerr_status_partial to org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.successDim
@@ -285,7 +405,7 @@ fun StatusBadge(status: SeerrMediaStatus, modifier: Modifier = Modifier) {
 		else -> return
 	}
 	Text(
-		stringResource(label),
+		if (label4k) "4K · " + stringResource(label) else stringResource(label),
 		color = org.jellyfin.androidtv.ui.base.JellyfinTheme.colorScheme.onBackground,
 		fontSize = 10.sp,
 		fontWeight = FontWeight.SemiBold,

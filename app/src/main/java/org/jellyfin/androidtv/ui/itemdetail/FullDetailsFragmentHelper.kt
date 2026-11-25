@@ -396,3 +396,45 @@ fun FullDetailsFragment.getLiveTvChannel(
 		}
 	}
 }
+
+/**
+ * Erg: on a show that's in the library, offers the seasons Seerr says are missing. The button
+ * starts hidden and appears once Seerr answers, so pages without Seerr never change.
+ */
+fun FullDetailsFragment.createSeerrMissingSeasonsButton(item: BaseItemDto): org.jellyfin.androidtv.ui.shared.buttons.DetailButton? {
+	if (item.type != BaseItemKind.SERIES) return null
+	val seerr by inject<org.jellyfin.androidtv.seerr.SeerrClient>()
+	if (!seerr.hasSession) return null
+
+	fun BaseItemDto.tmdbId() = providerIds?.entries?.firstOrNull { it.key.equals("Tmdb", ignoreCase = true) }?.value?.toIntOrNull()
+	var tmdbId: Int? = null
+
+	val button = org.jellyfin.androidtv.ui.shared.buttons.DetailButton.create(
+		requireContext(),
+		R.drawable.ic_add,
+		getString(R.string.seerr_missing_seasons),
+	) {
+		val id = tmdbId ?: return@create
+		val navigationRepository by inject<NavigationRepository>()
+		navigationRepository.navigate(Destinations.seerrItem(id, org.jellyfin.androidtv.seerr.MEDIA_TV))
+	}
+	button.visibility = View.GONE
+
+	lifecycleScope.launch {
+		// The details page doesn't always load provider ids; fetch the full item when they're missing
+		val id = item.tmdbId() ?: runCatching {
+			val api by inject<ApiClient>()
+			withContext(Dispatchers.IO) { api.userLibraryApi.getItem(itemId = item.id).content }.tmdbId()
+		}.getOrNull() ?: return@launch
+		val missing = runCatching { seerr.tv(id).missingSeasons() }
+			.onFailure { Timber.w(it, "Seerr lookup for missing seasons failed") }
+			.getOrNull().orEmpty()
+		if (missing.isEmpty()) return@launch
+		tmdbId = id
+		button.setLabel(resources.getQuantityString(R.plurals.seerr_missing_seasons_n, missing.size, missing.size))
+		button.visibility = View.VISIBLE
+		// The button row only holds buttons that were visible when it was drawn
+		rebindActions()
+	}
+	return button
+}

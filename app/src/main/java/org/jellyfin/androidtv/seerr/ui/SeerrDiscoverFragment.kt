@@ -1,6 +1,8 @@
 package org.jellyfin.androidtv.seerr.ui
 
 import android.os.Bundle
+import android.widget.Toast
+import org.jellyfin.androidtv.R
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
@@ -11,6 +13,7 @@ import org.jellyfin.androidtv.ui.base.JellyfinTheme
 import org.jellyfin.androidtv.ui.navigation.Destinations
 import org.jellyfin.androidtv.ui.navigation.NavigationRepository
 import org.jellyfin.androidtv.ui.settings.Routes
+import org.jellyfin.androidtv.util.sdk.TrailerUtils
 import org.jellyfin.androidtv.ui.settings.compat.SettingsViewModel
 import org.jellyfin.sdk.model.serializer.toUUIDOrNull
 import org.koin.android.ext.android.inject
@@ -46,7 +49,15 @@ class SeerrDiscoverFragment : Fragment() {
 					if (uuid != null) navigationRepository.navigate(Destinations.itemDetails(uuid))
 					else Timber.w("Seerr returned an invalid Jellyfin id: $id")
 				},
+				onPlayTrailer = ::playTrailer,
 			)
+		}
+	}
+
+	/** Hands the trailer to a YouTube app. */
+	private fun playTrailer(key: String) {
+		if (!TrailerUtils.openYouTube(requireContext(), key)) {
+			Toast.makeText(requireContext(), R.string.seerr_trailer_unavailable, Toast.LENGTH_LONG).show()
 		}
 	}
 

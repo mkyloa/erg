@@ -37,17 +37,23 @@ class MyDetailsOverviewRowPresenter(
 	override fun onBindRowViewHolder(holder: RowPresenter.ViewHolder, item: Any) {
 		super.onBindRowViewHolder(holder, item)
 		if (holder is ViewHolder && item is MyDetailsOverviewRow) {
+			boundHolder = holder
 			holder.bind(item)
 		}
 	}
 
+	override fun onUnbindRowViewHolder(holder: RowPresenter.ViewHolder) {
+		if (holder == boundHolder) boundHolder = null
+		super.onUnbindRowViewHolder(holder)
+	}
+
+	// Erg: the details page has one overview row; keep its holder so the page can redraw it
+	private var boundHolder: ViewHolder? = null
+
 	@Suppress("UNUSED_PARAMETER")
 	override fun onSelectLevelChanged(holder: RowPresenter.ViewHolder) = Unit
 
-	fun getViewHolder(): ViewHolder? {
-
-		return null
-	}
+	fun getViewHolder(): ViewHolder? = boundHolder
 
 	class ViewHolder(
 		private val detailRowView: DetailRowView,

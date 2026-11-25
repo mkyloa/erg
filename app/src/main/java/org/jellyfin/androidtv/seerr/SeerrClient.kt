@@ -150,16 +150,81 @@ class SeerrClient(
 	suspend fun search(query: String, page: Int = 1): SeerrPage =
 		get("search", "query" to query, "page" to page.toString())
 
+	suspend fun genres(isMovie: Boolean): List<SeerrGenreSlider> = get(if (isMovie) "discover/genreslider/movie" else "discover/genreslider/tv")
+	suspend fun genre(isMovie: Boolean, id: Int, page: Int = 1): SeerrPage =
+		get(if (isMovie) "discover/movies/genre/$id" else "discover/tv/genre/$id", "page" to page.toString())
+	suspend fun network(id: Int, page: Int = 1): SeerrPage = get("discover/tv/network/$id", "page" to page.toString())
+	suspend fun studio(id: Int, page: Int = 1): SeerrPage = get("discover/movies/studio/$id", "page" to page.toString())
+
 	suspend fun movie(id: Int): SeerrDetails = get("movie/$id")
 	suspend fun tv(id: Int): SeerrDetails = get("tv/$id")
 
+	private fun mediaPath(isMovie: Boolean, id: Int) = if (isMovie) "movie/$id" else "tv/$id"
+	suspend fun recommendations(isMovie: Boolean, id: Int): SeerrPage = get("${mediaPath(isMovie, id)}/recommendations")
+	suspend fun similar(isMovie: Boolean, id: Int): SeerrPage = get("${mediaPath(isMovie, id)}/similar")
+
+	/** Movies get Rotten Tomatoes and IMDb; shows only Rotten Tomatoes. 404 when there are none. */
+	suspend fun ratings(isMovie: Boolean, id: Int): SeerrRatings =
+		if (isMovie) get("movie/$id/ratingscombined")
+		else SeerrRatings(rt = get<SeerrRtRating>("tv/$id/ratings"))
+
+	suspend fun person(id: Int): SeerrPerson = get("person/$id")
+	suspend fun personCredits(id: Int): SeerrPersonCredits = get("person/$id/combined_credits")
+
 	// --- Requests ---------------------------------------------------------------------------
 
-	suspend fun requestMovie(tmdbId: Int): SeerrMediaRequest =
-		post("request", json.encodeToString(SeerrRequestBody(mediaType = MEDIA_MOVIE, mediaId = tmdbId)))
+	suspend fun requestMovie(tmdbId: Int, options: SeerrRequestOptions = SeerrRequestOptions()): SeerrMediaRequest =
+		post("request", json.encodeToString(requestBody(MEDIA_MOVIE, tmdbId, null, options)))
 
-	suspend fun requestTv(tmdbId: Int, seasons: List<Int>): SeerrMediaRequest =
-		post("request", json.encodeToString(SeerrRequestBody(mediaType = MEDIA_TV, mediaId = tmdbId, seasons = seasons)))
+	suspend fun requestTv(tmdbId: Int, seasons: List<Int>, options: SeerrRequestOptions = SeerrRequestOptions()): SeerrMediaRequest =
+		post("request", json.encodeToString(requestBody(MEDIA_TV, tmdbId, seasons, options)))
+
+	private fun requestBody(type: String, tmdbId: Int, seasons: List<Int>?, options: SeerrRequestOptions) = SeerrRequestBody(
+		mediaType = type,
+		mediaId = tmdbId,
+		seasons = seasons,
+		is4k = options.is4k,
+		serverId = options.serverId,
+		profileId = options.profileId,
+		rootFolder = options.rootFolder,
+	)
+
+	/** Requests, newest first. [filter] is all, pending, approved, processing, available, unavailable or failed. */
+	suspend fun requests(filter: String = "all", take: Int = 20, skip: Int = 0, requestedBy: Int? = null): SeerrRequestPage =
+		get(
+			"request",
+			*listOfNotNull(
+				"take" to take.toString(),
+				"skip" to skip.toString(),
+				"filter" to filter,
+				"sort" to "added",
+				requestedBy?.let { "requestedBy" to it.toString() },
+			).toTypedArray(),
+		)
+
+	suspend fun approveRequest(id: Int): SeerrMediaRequest = post("request/$id/approve", "{}")
+	suspend fun declineRequest(id: Int): SeerrMediaRequest = post("request/$id/decline", "{}")
+
+	/** Radarr (movies) or Sonarr (shows) servers set up in Seerr. */
+	suspend fun services(isMovie: Boolean): List<SeerrService> = get(if (isMovie) "service/radarr" else "service/sonarr")
+	suspend fun serviceDetails(isMovie: Boolean, id: Int): SeerrServiceDetails =
+		get(if (isMovie) "service/radarr/$id" else "service/sonarr/$id")
+
+	// --- Watchlist --------------------------------------------------------------------------
+
+	suspend fun watchlist(page: Int = 1): SeerrWatchlistPage = get("discover/watchlist", "page" to page.toString())
+
+	suspend fun addToWatchlist(tmdbId: Int, isMovie: Boolean, title: String) {
+		post<kotlinx.serialization.json.JsonElement>(
+			"watchlist",
+			json.encodeToString(SeerrWatchlistBody(tmdbId, if (isMovie) MEDIA_MOVIE else MEDIA_TV, title)),
+		)
+	}
+
+	suspend fun removeFromWatchlist(tmdbId: Int, isMovie: Boolean) = withContext(Dispatchers.IO) {
+		val url = url("watchlist/$tmdbId").newBuilder().addQueryParameter("mediaType", if (isMovie) MEDIA_MOVIE else MEDIA_TV).build()
+		executeRaw(Request.Builder().url(url).delete())
+	}
 
 	// --- Plumbing ---------------------------------------------------------------------------
 
@@ -190,6 +255,12 @@ class SeerrClient(
 			val text = response.checkSuccess()
 			json.decodeFromString<T>(text.ifBlank { "{}" })
 		}
+	}
+
+	private fun executeRaw(builder: Request.Builder) {
+		val cookie = sessionCookie ?: throw SeerrException("Not signed in to Seerr", 401)
+		builder.header("Cookie", cookie).header("Accept", "application/json")
+		http.newCall(builder.build()).execute().use { it.checkSuccess() }
 	}
 
 	private fun Response.checkSuccess(): String {
