@@ -778,7 +778,7 @@
     <!-- Screensaver -->
     <string name="pref_screensaver">Screensaver</string>
     <string name="pref_screensaver_inapp_enabled">Use in-app screensaver</string>
-    <string name="pref_screensaver_inapp_enabled_description">Show The screensaver while the app is open</string>
+    <string name="pref_screensaver_inapp_enabled_description">Show the screensaver while the app is open</string>
     <string name="pref_screensaver_inapp_timeout">Start screensaver after</string>
     <string name="pref_screensaver_clock_enabled">Show clock in screensaver</string>
     <string name="pref_screensaver_logo_enabled">Show logos and titles in screensaver</string>
@@ -1216,7 +1216,8 @@
     <string name="erg_backdrop_dynamic_colors">Dynamic colors</string>
     <string name="erg_backdrop_dynamic_colors_caption">Tint the background with colors from the artwork</string>
     <string name="erg_percent">%1$d%%</string>
-    <string name="erg_player_engine">Video player</string>
+    <string name="erg_player_engine">Player engine</string>
+    <string name="erg_builtin_player">Built-in player</string>
     <string name="erg_player_exoplayer">ExoPlayer</string>
     <string name="erg_player_exoplayer_caption">Best for HDR and Dolby Vision. Some formats need server transcoding.</string>
     <string name="erg_player_mpv">mpv</string>

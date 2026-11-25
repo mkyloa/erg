@@ -1,5 +1,7 @@
 package org.jellyfin.androidtv.ui.settings.screen.library
 
+import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -48,7 +50,7 @@ fun SettingsLibrariesScreen() {
 				val canOpen = allowGridView && displayPreferencesId != null
 
 				ListButton(
-					leadingContent = { Icon(painterResource(R.drawable.ic_folder), contentDescription = null) },
+					leadingContent = { Icon(painterResource(R.drawable.ic_folder), contentDescription = null, modifier = Modifier.size(24.dp)) },
 					headingContent = { Text(userView.name.orEmpty()) },
 					enabled = canOpen,
 					onClick = {

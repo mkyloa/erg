@@ -1,5 +1,7 @@
 package org.jellyfin.androidtv.ui.settings.screen
 
+import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -38,7 +40,7 @@ fun SettingsMainScreen() {
 
 		item {
 			ListButton(
-				leadingContent = { Icon(painterResource(R.drawable.ic_adjust), contentDescription = null) },
+				leadingContent = { Icon(painterResource(R.drawable.ic_adjust), contentDescription = null, modifier = Modifier.size(24.dp)) },
 				headingContent = { Text(stringResource(R.string.pref_customization)) },
 				onClick = { router.push(Routes.CUSTOMIZATION) },
 				modifier = Modifier.focusKey(Routes.CUSTOMIZATION),
@@ -76,7 +78,7 @@ fun SettingsMainScreen() {
 
 		item {
 			ListButton(
-				leadingContent = { Icon(painterResource(R.drawable.ic_error), contentDescription = null) },
+				leadingContent = { Icon(painterResource(R.drawable.ic_error), contentDescription = null, modifier = Modifier.size(24.dp)) },
 				headingContent = { Text(stringResource(R.string.pref_telemetry_category)) },
 				onClick = { router.push(Routes.TELEMETRY) },
 				modifier = Modifier.focusKey(Routes.TELEMETRY),

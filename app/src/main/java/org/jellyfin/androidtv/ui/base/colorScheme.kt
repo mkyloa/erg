@@ -96,6 +96,11 @@ data class ColorScheme(
 	val warning: Color = Color(0xFFF59E0B),
 	val info: Color = Color(0xFF6366F1),
 	val error: Color = Color(0xFFF87171),
+	// Checkboxes and radio buttons: fill when on, outline when off, and the check mark. Unspecified
+	// falls back to button/onButton, which is what every theme used before.
+	val control: Color = Color.Unspecified,
+	val controlOutline: Color = Color.Unspecified,
+	val onControl: Color = Color.Unspecified,
 )
 
 /** Gruvbox dark (github.com/morhetz/gruvbox) for Compose screens. */
@@ -139,6 +144,9 @@ fun gruvboxColorScheme(): ColorScheme = ColorScheme(
 	warning = Color(0xFFFABD2F),
 	info = Color(0xFF83A598),
 	error = Color(0xFFFB4934),
+	control = Color(0xFFFABD2F),
+	controlOutline = Color(0xFFA89984),
+	onControl = Color(0xFF282828),
 )
 
 /** Compose colors for an app theme. Themes without their own scheme use the default. */

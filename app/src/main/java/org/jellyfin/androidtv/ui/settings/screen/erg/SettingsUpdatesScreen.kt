@@ -28,7 +28,7 @@ fun SettingsUpdatesScreen() {
 	SettingsColumn {
 		item {
 			ListSection(
-				overlineContent = { Text(stringResource(R.string.app_name).uppercase()) },
+				overlineContent = { Text(stringResource(R.string.settings).uppercase()) },
 				headingContent = { Text(stringResource(R.string.erg_updates)) },
 				captionContent = { Text(stringResource(R.string.erg_update_current, updater.currentVersion)) },
 			)

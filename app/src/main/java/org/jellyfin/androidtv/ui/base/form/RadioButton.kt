@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -23,14 +24,15 @@ fun RadioButton(
 	checked: Boolean,
 	modifier: Modifier = Modifier,
 	shape: Shape = CircleShape,
-	containerColor: Color = JellyfinTheme.colorScheme.button,
-	contentColor: Color = JellyfinTheme.colorScheme.onButton
+	containerColor: Color = JellyfinTheme.colorScheme.control.takeOrElse { JellyfinTheme.colorScheme.button },
+	contentColor: Color = JellyfinTheme.colorScheme.onControl.takeOrElse { JellyfinTheme.colorScheme.onButton },
+	outlineColor: Color = JellyfinTheme.colorScheme.controlOutline.takeOrElse { containerColor },
 ) {
 	Box(
 		modifier = modifier
 			.defaultMinSize(minWidth = 18.dp, minHeight = 18.dp)
 			.background(if (checked) containerColor else Color.Unspecified, shape)
-			.border(if (checked) 0.dp else 2.dp, containerColor, shape),
+			.border(if (checked) 0.dp else 2.dp, outlineColor, shape),
 		contentAlignment = Alignment.Center,
 	) {
 		AnimatedVisibility(

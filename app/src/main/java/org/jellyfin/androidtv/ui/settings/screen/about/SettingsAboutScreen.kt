@@ -2,6 +2,8 @@ package org.jellyfin.androidtv.ui.settings.screen.about
 
 import android.content.ClipData
 import android.os.Build
+import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -36,8 +38,9 @@ fun SettingsAboutScreen(launchedFromLogin: Boolean = false) {
 		}
 
 		item {
-			val heading = "Jellyfin app version"
-			val caption = "jellyfin-androidtv ${BuildConfig.VERSION_NAME} ${BuildConfig.BUILD_TYPE}"
+			// Erg: the app's own name and version (debug builds are already named "Erg Debug")
+			val heading = stringResource(R.string.app_version)
+			val caption = "${stringResource(R.string.app_name)} ${BuildConfig.VERSION_NAME}"
 			ListButton(
 				leadingContent = { Icon(painterResource(R.drawable.ic_jellyfin), contentDescription = null) },
 				headingContent = { Text(heading) },
@@ -70,7 +73,7 @@ fun SettingsAboutScreen(launchedFromLogin: Boolean = false) {
 
 		if (!launchedFromLogin) item {
 			ListButton(
-				leadingContent = { Icon(painterResource(R.drawable.ic_flask), contentDescription = null) },
+				leadingContent = { Icon(painterResource(R.drawable.ic_flask), contentDescription = null, modifier = Modifier.size(24.dp)) },
 				headingContent = { Text(stringResource(R.string.pref_developer_link)) },
 				onClick = { router.push(Routes.DEVELOPER) },
 				modifier = Modifier.focusKey(Routes.DEVELOPER)

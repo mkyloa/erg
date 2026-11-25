@@ -47,6 +47,13 @@ fun SettingsPlaybackScreen() {
 			ListButton(
 				leadingContent = { Icon(painterResource(R.drawable.ic_tv_play), contentDescription = null) },
 				headingContent = { Text(stringResource(R.string.playback_video_player)) },
+				// Erg: name the app that plays video, so this row reads differently from "Player engine"
+				captionContent = {
+					val externalName = remember(context) {
+						externalAppRepository.getCurrentExternalPlayerApp(context)?.loadLabel(context.packageManager)?.toString()
+					}
+					Text(externalName ?: stringResource(R.string.erg_builtin_player))
+				},
 				trailingContent = {
 					val iconDrawable = remember(context) {
 						externalAppRepository.getCurrentExternalPlayerApp(context)?.loadIcon(context.packageManager)

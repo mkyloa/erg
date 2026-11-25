@@ -118,7 +118,7 @@ fun SettingsSeerrScreen() {
 	SettingsColumn {
 		item {
 			ListSection(
-				overlineContent = { Text(stringResource(R.string.app_name).uppercase()) },
+				overlineContent = { Text(stringResource(R.string.settings).uppercase()) },
 				headingContent = { Text(stringResource(R.string.seerr)) },
 				captionContent = { Text(stringResource(R.string.seerr_description)) },
 			)
