@@ -89,12 +89,13 @@ func wordmark(_ ctx: CGContext, cx: CGFloat, cy: CGFloat, capHeight: CGFloat, co
 	ctx.restoreGState()
 }
 
-/// TV launcher banner (16:9): black like DUNE's, wordmark plus a small mark.
+/// TV launcher banner (16:9): the white wordmark on a transparent background, so it sits on the
+/// launcher's wallpaper like icon-pack banners (Projectivy + Projectify) instead of a black box.
+/// Cap height matches DUNE's banner in those packs.
 func banner(_ w: Int, _ name: String) {
 	let h = w * 9 / 16
 	let ctx = makeContext(w, h)
-	ctx.setFillColor(CGColor(red: 0, green: 0, blue: 0, alpha: 1)); ctx.fill(CGRect(x: 0, y: 0, width: w, height: h))
-	wordmark(ctx, cx: CGFloat(w) / 2, cy: CGFloat(h) / 2, capHeight: CGFloat(h) * 0.26, color: white)
+	wordmark(ctx, cx: CGFloat(w) / 2, cy: CGFloat(h) / 2, capHeight: CGFloat(h) * 0.40, color: white)
 	save(ctx, name)
 }
 
