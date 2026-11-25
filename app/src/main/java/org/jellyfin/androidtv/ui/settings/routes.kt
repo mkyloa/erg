@@ -79,6 +79,8 @@ object Routes {
 	const val CUSTOMIZATION_CARD_CORNERS = "/customization/card-corners"
 	const val CUSTOMIZATION_HERO_CORNERS = "/customization/banner-corners"
 	const val CUSTOMIZATION_BUTTON_CORNERS = "/customization/button-corners"
+	const val CUSTOMIZATION_LIBRARY_ICONS = "/customization/library-icons"
+	const val CUSTOMIZATION_LIBRARY_ICON = "/customization/library-icons/{libraryId}"
 	const val CUSTOMIZATION_BACKDROP = "/customization/backdrop"
 	const val CUSTOMIZATION_SCREENSAVER = "/customization/screensaver"
 	const val CUSTOMIZATION_SCREENSAVER_TIMEOUT = "/customization/screensaver/timeout"
@@ -186,6 +188,12 @@ val routes = mapOf<String, RouteComposable>(
 	},
 	Routes.CUSTOMIZATION_BUTTON_CORNERS to {
 		SettingsCustomizationCornersScreen(CornerTarget.BUTTONS)
+	},
+	Routes.CUSTOMIZATION_LIBRARY_ICONS to {
+		org.jellyfin.androidtv.ui.settings.screen.erg.SettingsLibraryIconsScreen()
+	},
+	Routes.CUSTOMIZATION_LIBRARY_ICON to { context ->
+		org.jellyfin.androidtv.ui.settings.screen.erg.SettingsLibraryIconScreen(context.parameters["libraryId"]!!)
 	},
 	Routes.CUSTOMIZATION_BACKDROP to {
 		SettingsCustomizationBackdropScreen()

@@ -18,6 +18,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.flow.first
 import org.jellyfin.androidtv.data.repository.UserViewsRepository
+import org.jellyfin.androidtv.preference.UserSettingPreferences
+import org.jellyfin.androidtv.ui.home.LibraryIcons
 import org.jellyfin.androidtv.ui.composable.item.rememberButtonShape
 import org.jellyfin.androidtv.ui.base.Text
 import org.jellyfin.androidtv.ui.itemhandling.ItemLauncher
@@ -29,13 +31,15 @@ import timber.log.Timber
 private const val MAX_LIBRARY_TABS = 5
 
 /**
- * Erg: one text tab per library (Movies, Shows, Collections, ...) in the home top bar. Replaces the
- * library row that used to sit under the hero on the modern home screen.
+ * Erg: one tab per library (Movies, Shows, Collections, ...) in the home top bar: an icon button
+ * like the rest of the bar, or a text tab when the library has no icon (see [LibraryIcons]).
+ * Replaces the library row that used to sit under the hero on the modern home screen.
  */
 @Composable
 fun LibraryTabs() {
 	val userViewsRepository = koinInject<UserViewsRepository>()
 	val itemLauncher = koinInject<ItemLauncher>()
+	val userSettingPreferences = koinInject<UserSettingPreferences>()
 
 	val libraries by produceState(emptyList<BaseItemDto>()) {
 		value = runCatching {
@@ -44,12 +48,17 @@ fun LibraryTabs() {
 				.take(MAX_LIBRARY_TABS)
 		}.onFailure { Timber.w(it, "Could not load libraries for the top bar") }.getOrDefault(emptyList())
 	}
+	// Re-read when the icons are changed in settings
+	val revision = LibraryIcons.revision.intValue
+	val icons = remember(libraries, revision) { LibraryIcons.resolve(libraries, LibraryIcons.load(userSettingPreferences)) }
 
 	libraries.forEach { library ->
-		LibraryTab(
-			name = library.name.orEmpty(),
-			onClick = { itemLauncher.launchUserView(library) },
-		)
+		val name = library.name.orEmpty()
+		val onClick = { itemLauncher.launchUserView(library) }
+		val icon = icons[library.id.toString()]
+		// Erg: an icon makes it a regular top bar button (label on focus); otherwise a text tab
+		if (icon != null) ToolbarButton(icon = icon, label = name, onClick = onClick)
+		else LibraryTab(name = name, onClick = onClick)
 	}
 }
 

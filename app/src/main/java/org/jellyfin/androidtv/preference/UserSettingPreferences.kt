@@ -46,6 +46,9 @@ class UserSettingPreferences(
 	/** Rows pinned to the home screen (JSON, see PinnedRows) */
 	val pinnedRows = stringPreference("erg_pinned_rows", "")
 
+	/** Erg: top bar icon per library, JSON map of library id to LibraryIcon name */
+	val libraryIcons = stringPreference("erg_library_icons", "")
+
 	val genrerows = listOf(genrerow0, genrerow1, genrerow2, genrerow3, genrerow4, genrerow5, genrerow6, genrerow7, genrerow8, genrerow9)
 
 	val themeSongsEnabled = booleanPreference("themesongsEnabled", false)

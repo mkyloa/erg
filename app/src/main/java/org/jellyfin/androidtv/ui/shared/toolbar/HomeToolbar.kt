@@ -148,7 +148,7 @@ internal fun toolbarButtonColors(focused: Boolean): Pair<Color, Color> {
  * label fades and slides in, so the only thing that moves is the pill growing to fit the label.
  */
 @Composable
-private fun ToolbarButton(
+internal fun ToolbarButton(
 	@DrawableRes icon: Int,
 	label: String,
 	onClick: () -> Unit,

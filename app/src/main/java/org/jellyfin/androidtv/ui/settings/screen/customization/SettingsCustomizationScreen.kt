@@ -95,6 +95,15 @@ fun SettingsCustomizationScreen() {
 		}
 
 		item {
+			ListButton(
+				headingContent = { Text(stringResource(R.string.erg_library_icons)) },
+				captionContent = { Text(stringResource(R.string.erg_library_icons_caption)) },
+				onClick = { router.push(Routes.CUSTOMIZATION_LIBRARY_ICONS) },
+				modifier = Modifier.focusKey(Routes.CUSTOMIZATION_LIBRARY_ICONS)
+			)
+		}
+
+		item {
 			var clockBehavior by rememberPreference(userPreferences, UserPreferences.clockBehavior)
 
 			ListButton(
