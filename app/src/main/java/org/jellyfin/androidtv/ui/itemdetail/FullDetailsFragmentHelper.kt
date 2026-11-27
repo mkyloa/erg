@@ -12,6 +12,7 @@ import org.jellyfin.androidtv.R
 import org.jellyfin.androidtv.data.model.DataRefreshService
 import org.jellyfin.androidtv.data.repository.ItemMutationRepository
 import org.jellyfin.androidtv.data.repository.ItemRepository
+import org.jellyfin.androidtv.ui.itemdetail.identify.showIdentifyDialog
 import org.jellyfin.androidtv.ui.navigation.Destinations
 import org.jellyfin.androidtv.ui.navigation.NavigationRepository
 import org.jellyfin.androidtv.util.TimeUtils
@@ -98,6 +99,10 @@ fun FullDetailsFragment.showDetailsMenu(
 
 	if (goToSeriesButton?.isVisible == false) {
 		item(getString(R.string.lbl_goto_series)) { gotoSeries() }
+	}
+
+	if (identifyButton?.isVisible == false) {
+		item(getString(R.string.erg_identify)) { showIdentifyDialog(baseItemDto) }
 	}
 }.showIfNotEmpty()
 

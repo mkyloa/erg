@@ -56,6 +56,8 @@ import org.jellyfin.androidtv.preference.constant.ClockBehavior;
 import org.jellyfin.androidtv.ui.RecordPopup;
 import org.jellyfin.androidtv.ui.RecordingIndicatorView;
 import org.jellyfin.androidtv.ui.SubtitleManagementPopup;
+import org.jellyfin.androidtv.ui.itemdetail.identify.Identify;
+import org.jellyfin.androidtv.ui.itemdetail.identify.IdentifyDialogKt;
 import org.jellyfin.androidtv.ui.shared.buttons.DetailButton;
 import org.jellyfin.androidtv.ui.browsing.BrowsingUtils;
 import org.jellyfin.androidtv.ui.itemhandling.BaseRowItem;
@@ -790,6 +792,7 @@ public class FullDetailsFragment extends Fragment implements RecordingIndicatorV
     DetailButton queueButton = null;
     DetailButton deleteButton = null;
     DetailButton moreButton;
+    DetailButton identifyButton;
     DetailButton playButton = null;
     DetailButton trailerButton = null;
 
@@ -1147,6 +1150,17 @@ public class FullDetailsFragment extends Fragment implements RecordingIndicatorV
         DetailButton seerrButton = FullDetailsFragmentHelperKt.createSeerrMissingSeasonsButton(this, mBaseItem);
         if (seerrButton != null) mDetailsOverviewRow.addAction(seerrButton);
 
+        // Erg: Jellyfin's Identify, for administrators on movies and shows
+        if (Identify.isAvailable(mBaseItem)) {
+            identifyButton = DetailButton.create(requireContext(), R.drawable.ic_search, getString(R.string.erg_identify), new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    IdentifyDialogKt.showIdentifyDialog(FullDetailsFragment.this, mBaseItem);
+                }
+            });
+            mDetailsOverviewRow.addAction(identifyButton);
+        }
+
         //Now, create a more button to show if needed
         moreButton = DetailButton.create(requireContext(), R.drawable.ic_more, getString(R.string.lbl_other_options), new View.OnClickListener() {
             @Override
@@ -1211,6 +1225,7 @@ public class FullDetailsFragment extends Fragment implements RecordingIndicatorV
         if (mWatchedToggleButton != null) actionsList.add(mWatchedToggleButton);
         if (mPrevButton != null) actionsList.add(mPrevButton);
         if (deleteButton != null) actionsList.add(deleteButton);
+        if (identifyButton != null) actionsList.add(identifyButton);
 
         // reverse the list so the less important actions are hidden first
         Collections.reverse(actionsList);

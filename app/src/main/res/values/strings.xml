@@ -1358,4 +1358,21 @@
     <string name="erg_unknown_row">Unknown row %1$d</string>
     <string name="erg_update_auto">Check automatically</string>
     <string name="erg_update_unsupported">This build doesn\'t update itself (development build)</string>
+    <string name="erg_identify">Identify</string>
+    <string name="erg_identify_title">Identify %1$s</string>
+    <string name="erg_identify_hint">Search the server\'s metadata providers, then pick the right match. Its metadata replaces what\'s there now.</string>
+    <string name="erg_identify_name">Name</string>
+    <string name="erg_identify_year">Year</string>
+    <string name="erg_identify_imdb">IMDb ID</string>
+    <string name="erg_identify_tmdb">TMDb ID</string>
+    <string name="erg_identify_tvdb">TVDb ID</string>
+    <string name="erg_identify_replace_images">Replace existing images</string>
+    <string name="erg_identify_search">Search</string>
+    <string name="erg_identify_searching">Searching…</string>
+    <string name="erg_identify_pick">Pick the match</string>
+    <string name="erg_identify_no_results">No matches. Try another name or year, or an ID.</string>
+    <string name="erg_identify_failed">Something went wrong: %1$s</string>
+    <string name="erg_identify_back">Back</string>
+    <string name="erg_identify_applying">Applying %1$s and refreshing metadata…</string>
+    <string name="erg_identify_done">%1$s identified</string>
 </resources>
