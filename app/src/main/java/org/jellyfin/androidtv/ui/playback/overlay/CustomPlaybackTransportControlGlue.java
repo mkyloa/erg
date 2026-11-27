@@ -37,6 +37,7 @@ import org.jellyfin.androidtv.ui.playback.overlay.action.GuideAction;
 import org.jellyfin.androidtv.ui.playback.overlay.action.PlayPauseAction;
 import org.jellyfin.androidtv.ui.playback.overlay.action.PlaybackInfoAction;
 import org.jellyfin.androidtv.ui.playback.overlay.action.PlaybackSpeedAction;
+import org.jellyfin.androidtv.ui.playback.overlay.action.PlayerIconTint;
 import org.jellyfin.androidtv.ui.playback.overlay.action.PreviousLiveTvChannelAction;
 import org.jellyfin.androidtv.ui.playback.overlay.action.RecordAction;
 import org.jellyfin.androidtv.ui.playback.overlay.action.RewindAction;
@@ -240,6 +241,12 @@ public class CustomPlaybackTransportControlGlue extends PlaybackTransportControl
                 context.getString(R.string.lbl_record),
                 context.getString(R.string.lbl_cancel_recording)
         });
+
+        // Erg: all controls in the theme's icon color, not a mix of themed and white
+        PlayerIconTint.apply(context, playPauseAction, rewindAction, fastForwardAction, skipPreviousAction,
+                skipNextAction, selectAudioAction, closedCaptionsAction, selectQualityAction, playbackSpeedAction,
+                zoomAction, playbackInfoAction, chapterAction, episodesAction, previousLiveTvChannelAction,
+                channelBarChannelAction, guideAction, recordAction);
     }
 
     @Override
